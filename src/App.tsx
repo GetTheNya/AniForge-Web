@@ -107,7 +107,7 @@ function App() {
   return (
     <Layout>
       {isDetailPage && animeId ? (
-        <AnimeDetailView anilistId={animeId} />
+        <AnimeDetailView key={animeId} anilistId={animeId} />
       ) : (
         <div className="space-y-6">
           {/* Search + filters */}

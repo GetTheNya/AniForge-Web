@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDatabase } from '../context/DatabaseContext';
 import { supabase } from '../services/supabase';
 import { rowToAnime, type Anime } from '../types/anime';
+import { STATUS_CONFIGS } from '../utils/statusConfig';
 import StatusBadge from './StatusBadge';
 
 interface AnimeDetailViewProps {
@@ -35,6 +36,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     isLoading,
     error,
     updateTracking,
+    deleteTracking,
   } = useAnimeDetail(anilistId);
 
   // Local state for UI
@@ -619,21 +621,41 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             ) : (
               <div className="space-y-4">
                 
-                {/* Watch Status */}
+                {/* Watch Status Buttons */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Watch Status</label>
-                  <select
-                    value={tracking?.watch_status || ''}
-                    onChange={(e) => updateTracking({ watch_status: e.target.value || 'PLANNING' })}
-                    className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-                  >
-                    <option value="">Not Tracking</option>
-                    <option value="WATCHING">Watching</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="PLANNING">Planning to Watch</option>
-                    <option value="ON_HOLD">On Hold</option>
-                    <option value="DROPPED">Dropped</option>
-                  </select>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {STATUS_CONFIGS.map((status) => {
+                      const isActive = tracking?.watch_status === status.id;
+                      
+                      return (
+                        <button
+                          key={status.id}
+                          onClick={async () => {
+                            try {
+                              if (isActive) {
+                                await deleteTracking();
+                              } else {
+                                await updateTracking({ watch_status: status.id });
+                              }
+                            } catch (e) {
+                              console.error('[WatchStatusButton] Update tracking failed:', e);
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none"
+                          style={{
+                            borderColor: isActive ? status.color : 'var(--color-border-glass)',
+                            backgroundColor: isActive ? `${status.color}25` : 'var(--color-bg-input)',
+                            color: isActive ? status.color : 'var(--color-text-secondary)',
+                            boxShadow: isActive ? `0 0 12px ${status.color}30` : 'none',
+                          }}
+                        >
+                          {isActive ? status.activeIcon : status.inactiveIcon}
+                          <span>{status.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Episode Progress */}

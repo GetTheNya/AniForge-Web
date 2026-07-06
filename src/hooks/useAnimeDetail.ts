@@ -20,6 +20,7 @@ interface UseAnimeDetailResult {
   isLoading: boolean;
   error: string | null;
   updateTracking: (updates: Partial<Omit<UserTracking, 'anilist_id' | 'last_modified'>>) => Promise<void>;
+  deleteTracking: () => Promise<void>;
 }
 
 export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
@@ -37,7 +38,7 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
   const [studios, setStudios] = useState<Studio[]>([]);
   const [recommendations, setRecommendations] = useState<Anime[]>([]);
   const [tracking, setTracking] = useState<UserTracking | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(anilistId !== null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDetail = useCallback(async () => {
@@ -188,6 +189,14 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
         last_modified: new Date().toISOString(),
       };
 
+      if (updates.watch_status === 'COMPLETED' && anime && anime.episodes) {
+        trackingObj.episode_progress = anime.episodes;
+      }
+
+      if (trackingObj.episode_progress === null || trackingObj.episode_progress === undefined) {
+        trackingObj.episode_progress = 0;
+      }
+
       try {
         const { error: upsertError } = await supabase
           .from('user_tracking')
@@ -204,8 +213,27 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
         throw e;
       }
     },
-    [user, anilistId, tracking]
+    [user, anilistId, tracking, anime]
   );
+
+  const deleteTracking = useCallback(async () => {
+    if (!user || !anilistId) return;
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('user_tracking')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('anilist_id', anilistId);
+
+      if (deleteError) throw deleteError;
+
+      setTracking(null);
+    } catch (e) {
+      console.error('[useAnimeDetail] Failed to delete tracking info:', e);
+      throw e;
+    }
+  }, [user, anilistId]);
 
   useEffect(() => {
     fetchDetail();
@@ -226,5 +254,6 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
     isLoading,
     error,
     updateTracking,
+    deleteTracking,
   };
 }
