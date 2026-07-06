@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabase';
+import { useUserTracking } from '../context/UserTrackingContext';
+import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime, type Genre, type Tag, type Studio, type AnimeStaff, type Franchise } from '../types/anime';
 import type { UserTracking } from '../types/supabase';
 
@@ -26,6 +28,7 @@ interface UseAnimeDetailResult {
 export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
   const { db, status, queryObjects } = useDatabase();
   const { user } = useAuth();
+  const { saveTracking, removeTracking } = useUserTracking();
 
   const [anime, setAnime] = useState<Anime | null>(null);
   const [screenshots, setScreenshots] = useState<string[]>([]);
@@ -37,9 +40,31 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
   const [staff, setStaff] = useState<AnimeStaff[]>([]);
   const [studios, setStudios] = useState<Studio[]>([]);
   const [recommendations, setRecommendations] = useState<Anime[]>([]);
-  const [tracking, setTracking] = useState<UserTracking | null>(null);
   const [isLoading, setIsLoading] = useState(anilistId !== null);
   const [error, setError] = useState<string | null>(null);
+
+  // Reactive Dexie tracking state
+  const trackingRecord = useLiveQuery(
+    () => {
+      if (!anilistId) return undefined;
+      return userDb.user_tracking.get(anilistId);
+    },
+    [anilistId]
+  );
+
+  const tracking = useMemo<UserTracking | null>(() => {
+    if (!trackingRecord || trackingRecord.is_deleted) {
+      return null;
+    }
+    return {
+      anilist_id: trackingRecord.anilist_id,
+      watch_status: trackingRecord.status,
+      episode_progress: trackingRecord.episode_progress,
+      score: trackingRecord.score,
+      notes: trackingRecord.notes,
+      last_modified: trackingRecord.updated_at,
+    };
+  }, [trackingRecord]);
 
   const fetchDetail = useCallback(async () => {
     if (!db || status !== 'ready' || !anilistId) return;
@@ -153,87 +178,56 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
       );
       setRecommendations(recRows.map(rowToAnime));
 
-      // 10. User Tracking from Supabase (if logged in)
-      if (user) {
-        const { data, error: fetchError } = await supabase
-          .from('user_tracking')
-          .select('anilist_id, watch_status, score, episode_progress, notes, last_modified')
-          .eq('user_id', user.id)
-          .eq('anilist_id', anilistId)
-          .maybeSingle();
-
-        if (fetchError) {
-          console.warn('[useAnimeDetail] Failed to fetch tracking from Supabase:', fetchError);
-        } else {
-          setTracking((data as UserTracking) || null);
-        }
-      } else {
-        setTracking(null);
-      }
     } catch (e) {
       console.error('[useAnimeDetail] Error loading detail:', e);
       setError(e instanceof Error ? e.message : 'Failed to load details');
     } finally {
       setIsLoading(false);
     }
-  }, [db, status, anilistId, user, queryObjects]);
+  }, [db, status, anilistId, queryObjects]);
 
   const updateTracking = useCallback(
     async (updates: Partial<Omit<UserTracking, 'anilist_id' | 'last_modified'>>) => {
       if (!user || !anilistId) return;
 
-      const trackingObj: Partial<UserTracking> = {
-        ...tracking,
-        ...updates,
-        anilist_id: anilistId,
-        last_modified: new Date().toISOString(),
-      };
-
-      if (updates.watch_status === 'COMPLETED' && anime && anime.episodes) {
-        trackingObj.episode_progress = anime.episodes;
+      const trackingUpdates: any = {};
+      if (updates.watch_status !== undefined) {
+        trackingUpdates.status = updates.watch_status;
+      }
+      if (updates.episode_progress !== undefined) {
+        trackingUpdates.episode_progress = updates.episode_progress;
+      }
+      if (updates.score !== undefined) {
+        trackingUpdates.score = updates.score;
+      }
+      if (updates.notes !== undefined) {
+        trackingUpdates.notes = updates.notes;
       }
 
-      if (trackingObj.episode_progress === null || trackingObj.episode_progress === undefined) {
-        trackingObj.episode_progress = 0;
+      if (updates.watch_status === 'COMPLETED' && anime && anime.episodes) {
+        trackingUpdates.episode_progress = anime.episodes;
       }
 
       try {
-        const { error: upsertError } = await supabase
-          .from('user_tracking')
-          .upsert({
-            user_id: user.id,
-            ...trackingObj,
-          });
-
-        if (upsertError) throw upsertError;
-
-        setTracking(trackingObj as UserTracking);
+        await saveTracking(anilistId, trackingUpdates);
       } catch (e) {
         console.error('[useAnimeDetail] Failed to save tracking info:', e);
         throw e;
       }
     },
-    [user, anilistId, tracking, anime]
+    [user, anilistId, saveTracking, anime]
   );
 
   const deleteTracking = useCallback(async () => {
     if (!user || !anilistId) return;
 
     try {
-      const { error: deleteError } = await supabase
-        .from('user_tracking')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('anilist_id', anilistId);
-
-      if (deleteError) throw deleteError;
-
-      setTracking(null);
+      await removeTracking(anilistId);
     } catch (e) {
       console.error('[useAnimeDetail] Failed to delete tracking info:', e);
       throw e;
     }
-  }, [user, anilistId]);
+  }, [user, anilistId, removeTracking]);
 
   useEffect(() => {
     fetchDetail();

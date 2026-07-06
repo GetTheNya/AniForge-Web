@@ -1,12 +1,13 @@
 /**
- * useSupabaseLists — fetches user tracking data from Supabase
+ * useSupabaseLists — fetches user tracking data from Dexie (local cache)
  * and cross-references with the local SQLite catalog.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useMemo, useCallback } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useDatabase } from '../context/DatabaseContext';
-import { supabase } from '../services/supabase';
+import { useUserTracking } from '../context/UserTrackingContext';
+import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime } from '../types/anime';
 import type { UserTracking } from '../types/supabase';
 
@@ -23,63 +24,71 @@ interface UseSupabaseListsResult {
 }
 
 export function useSupabaseLists(): UseSupabaseListsResult {
-  const { user } = useAuth();
   const { db, status, queryObjects } = useDatabase();
-  const [trackingList, setTrackingList] = useState<TrackingWithAnime[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { syncStatus, sync } = useUserTracking();
 
-  const fetchAndCrossReference = useCallback(async () => {
-    if (!user || !db || status !== 'ready') return;
+  // Reactive IndexedDB query
+  const trackingRecords = useLiveQuery(
+    () => userDb.user_tracking.toArray()
+  );
 
-    setIsLoading(true);
-    setError(null);
+  // Hybrid Cross-Referencing: Join local tracking with catalog metadata
+  const trackingList = useMemo<TrackingWithAnime[]>(() => {
+    if (!db || status !== 'ready' || !trackingRecords || trackingRecords.length === 0) {
+      return [];
+    }
+
+    // Filter out soft deleted records
+    const activeRecords = trackingRecords.filter((r) => !r.is_deleted);
+    if (activeRecords.length === 0) {
+      return [];
+    }
 
     try {
-      // 1. Fetch tracking from Supabase
-      const { data, error: fetchError } = await supabase
-        .from('user_tracking')
-        .select('anilist_id, watch_status, score, episode_progress, notes, last_modified')
-        .eq('user_id', user.id)
-        .order('last_modified', { ascending: false });
+      // 1. Extract anilist_id values
+      const ids = activeRecords.map((r) => r.anilist_id);
 
-      if (fetchError) throw fetchError;
-      if (!data || data.length === 0) {
-        setTrackingList([]);
-        return;
-      }
-
-      const trackingItems = data as UserTracking[];
-
-      // 2. Cross-reference with local SQLite catalog
-      const ids = trackingItems.map((t) => t.anilist_id);
+      // 2. Singular optimized batch query against catalog SQLite
       const placeholders = ids.map(() => '?').join(',');
       const sql = `SELECT * FROM anime WHERE anilist_id IN (${placeholders})`;
+      
+      console.info(`[useSupabaseLists] Hybrid Join: Fetching catalog metadata for ${ids.length} tracking records...`);
       const animeRows = queryObjects<Record<string, unknown>>(sql, ids);
+      
       const animeMap = new Map<number, Anime>();
       for (const row of animeRows) {
         const anime = rowToAnime(row);
         animeMap.set(anime.anilist_id, anime);
       }
 
-      // 3. Merge tracking + anime data
-      const merged: TrackingWithAnime[] = trackingItems.map((t) => ({
-        tracking: t,
-        anime: animeMap.get(t.anilist_id) ?? null,
+      // 3. Map to public UI tracking format and join with catalog anime
+      return activeRecords.map((record) => ({
+        tracking: {
+          anilist_id: record.anilist_id,
+          watch_status: record.status,
+          episode_progress: record.episode_progress,
+          score: record.score,
+          notes: record.notes,
+          last_modified: record.updated_at,
+        },
+        anime: animeMap.get(record.anilist_id) ?? null,
       }));
-
-      setTrackingList(merged);
     } catch (e) {
-      console.error('[useSupabaseLists] Error:', e);
-      setError(e instanceof Error ? e.message : 'Failed to load tracking data');
-    } finally {
-      setIsLoading(false);
+      console.error('[useSupabaseLists] Error during hybrid join query:', e);
+      return [];
     }
-  }, [user, db, status, queryObjects]);
+  }, [db, status, trackingRecords, queryObjects]);
 
-  useEffect(() => {
-    fetchAndCrossReference();
-  }, [fetchAndCrossReference]);
+  const refresh = useCallback(async () => {
+    await sync();
+  }, [sync]);
 
-  return { trackingList, isLoading, error, refresh: fetchAndCrossReference };
+  const isLoading = trackingRecords === undefined || syncStatus === 'syncing';
+
+  return {
+    trackingList,
+    isLoading,
+    error: syncStatus === 'error' ? 'Failed to sync tracking data' : null,
+    refresh,
+  };
 }
