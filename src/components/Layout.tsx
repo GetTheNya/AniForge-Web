@@ -1,11 +1,7 @@
-/**
- * Layout — App shell with glassmorphic header, Google auth button,
- * and database status indicator.
- */
-
 import type { ReactNode } from 'react';
 import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '../hooks/useNavigation';
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +10,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { status, version, recordCount, progress } = useDatabase();
   const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { pathname, navigate } = useNavigation();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,17 +18,47 @@ export default function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-50 border-b border-[var(--color-border-glass)] bg-[var(--color-bg-base)]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] flex items-center justify-center shadow-lg">
-                <span className="text-white font-black text-sm">A</span>
+            {/* Logo and Nav */}
+            <div className="flex items-center gap-6">
+              <div
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => navigate('/')}
+              >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] flex items-center justify-center shadow-lg">
+                  <span className="text-white font-black text-sm">A</span>
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent">
+                    AniForge Web
+                  </h1>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent">
-                  AniForge Web
-                </h1>
-              </div>
+
+              {/* Navigation links */}
+              <nav className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/')}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pathname === '/' || pathname === '/anime'
+                      ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-white'
+                  }`}
+                >
+                  Catalog
+                </button>
+                <button
+                  onClick={() => navigate('/library')}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    pathname === '/library' || pathname === '/collection'
+                      ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-white'
+                  }`}
+                >
+                  Library
+                </button>
+              </nav>
             </div>
+
 
             {/* Status + Auth */}
             <div className="flex items-center gap-4">

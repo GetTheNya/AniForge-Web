@@ -3,20 +3,17 @@ import { useNavigation } from '../hooks/useNavigation';
 import { useAnimeDetail } from '../hooks/useAnimeDetail';
 import { useAuth } from '../context/AuthContext';
 import { useDatabase } from '../context/DatabaseContext';
-import { supabase } from '../services/supabase';
 import { rowToAnime, type Anime } from '../types/anime';
 import { STATUS_CONFIGS } from '../utils/statusConfig';
 import StatusBadge from './StatusBadge';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { userDb } from '../services/userDb';
+import { useUserTracking } from '../context/UserTrackingContext';
 
 interface AnimeDetailViewProps {
   anilistId: number;
 }
 
-interface Collection {
-  collection_id: string;
-  name: string;
-  description: string | null;
-}
 
 export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const { navigate } = useNavigation();
@@ -48,9 +45,32 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const notesTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Collections state
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [animeCollectionIds, setAnimeCollectionIds] = useState<string[]>([]);
+  // Collections and cross-ref states reactively using useLiveQuery on Dexie.js
+  const collections = useLiveQuery(
+    async () => {
+      const all = await userDb.collections.toArray();
+      // Map to the Collection shape the component expects
+      return all
+        .filter((c) => c.is_deleted !== 1)
+        .map((c) => ({
+          collection_id: c.id,
+          name: c.title,
+          description: c.description,
+        }));
+    }
+  ) || [];
+
+  const animeCollectionIds = useLiveQuery(
+    async () => {
+      const refs = await userDb.collection_anime_cross_ref
+        .where('animeId')
+        .equals(anilistId)
+        .toArray();
+      return refs.filter((r) => r.is_deleted !== 1).map((r) => r.collectionId);
+    },
+    [anilistId]
+  ) || [];
+
   const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [newCollectionDesc, setNewCollectionDesc] = useState('');
@@ -69,37 +89,6 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     }
   }, [tracking]);
 
-  // Load collections
-  useEffect(() => {
-    if (!user || !showCollectionModal) return;
-    const userId = user.id;
-
-    async function loadCollectionsData() {
-      try {
-        // 1. Fetch user collections
-        const { data: cols, error: colsErr } = await supabase
-          .from('user_collections')
-          .select('collection_id, name, description')
-          .eq('user_id', userId);
-        
-        if (colsErr) throw colsErr;
-        setCollections(cols || []);
-
-        // 2. Fetch collections containing this anime
-        const { data: refs, error: refsErr } = await supabase
-          .from('user_collection_anime')
-          .select('collection_id')
-          .eq('anime_id', anilistId);
-
-        if (refsErr) throw refsErr;
-        setAnimeCollectionIds((refs || []).map((r) => r.collection_id));
-      } catch (e) {
-        console.error('[AnimeDetailView] Error loading collections:', e);
-      }
-    }
-
-    loadCollectionsData();
-  }, [user, anilistId, showCollectionModal]);
 
   // Airing countdown logic
   useEffect(() => {
@@ -151,83 +140,39 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     }, 1000);
   };
 
-  // Toggle collection cross reference
+  // Toggle collection cross reference via write-through sync engine
+  const {
+    saveCollection,
+    addAnimeToCollection,
+    removeAnimeFromCollection
+  } = useUserTracking();
+
   const handleToggleCollection = async (collectionId: string) => {
     if (!user) return;
     const isAdded = animeCollectionIds.includes(collectionId);
 
     try {
       if (isAdded) {
-        // Remove
-        const { error } = await supabase
-          .from('user_collection_anime')
-          .delete()
-          .eq('collection_id', collectionId)
-          .eq('anime_id', anilistId);
-
-        if (error) throw error;
-        setAnimeCollectionIds((prev) => prev.filter((id) => id !== collectionId));
+        await removeAnimeFromCollection(collectionId, anilistId);
       } else {
-        // Add (find max index first)
-        const { data: refs } = await supabase
-          .from('user_collection_anime')
-          .select('order_index')
-          .eq('collection_id', collectionId)
-          .order('order_index', { ascending: false })
-          .limit(1);
-
-        const nextIndex = refs && refs.length > 0 ? (refs[0].order_index ?? 0) + 1 : 0;
-
-        const { error } = await supabase
-          .from('user_collection_anime')
-          .insert({
-            collection_id: collectionId,
-            anime_id: anilistId,
-            order_index: nextIndex,
-          });
-
-        if (error) throw error;
-        setAnimeCollectionIds((prev) => [...prev, collectionId]);
+        await addAnimeToCollection(collectionId, anilistId);
       }
     } catch (e) {
       console.error('[AnimeDetailView] Toggle collection error:', e);
     }
   };
 
-  // Create new collection
+  // Create new collection via write-through sync engine
   const handleCreateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newCollectionName.trim()) return;
 
     setIsCreatingCollection(true);
     try {
-      const { data: newCol, error: insertColErr } = await supabase
-        .from('user_collections')
-        .insert({
-          user_id: user.id,
-          name: newCollectionName.trim(),
-          description: newCollectionDesc.trim() || null,
-          is_public: false,
-        })
-        .select()
-        .single();
+      const collectionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      await saveCollection(collectionId, newCollectionName.trim(), newCollectionDesc.trim());
+      await addAnimeToCollection(collectionId, anilistId);
 
-      if (insertColErr) throw insertColErr;
-
-      // Add anime to newly created collection
-      const { error: insertRefErr } = await supabase
-        .from('user_collection_anime')
-        .insert({
-          collection_id: newCol.collection_id,
-          anime_id: anilistId,
-          order_index: 0,
-        });
-
-      if (insertRefErr) throw insertRefErr;
-
-      // Refresh list
-      setCollections((prev) => [...prev, newCol]);
-      setAnimeCollectionIds((prev) => [...prev, newCol.collection_id]);
       setNewCollectionName('');
       setNewCollectionDesc('');
       setShowCreateCollection(false);

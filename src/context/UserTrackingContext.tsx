@@ -8,7 +8,12 @@ import {
 } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../services/supabase';
-import { userDb, type UserTrackingRecord } from '../services/userDb';
+import {
+  userDb,
+  type UserTrackingRecord,
+  type CollectionRecord,
+  type CollectionAnimeCrossRefRecord,
+} from '../services/userDb';
 
 interface UserTrackingContextValue {
   syncStatus: 'idle' | 'syncing' | 'error';
@@ -20,6 +25,11 @@ interface UserTrackingContextValue {
     updates: Partial<Omit<UserTrackingRecord, 'anilist_id' | 'updated_at' | 'is_synced' | 'is_deleted'>>
   ) => Promise<void>;
   removeTracking: (anilistId: number) => Promise<void>;
+  saveCollection: (id: string, title: string, description: string) => Promise<void>;
+  removeCollection: (id: string) => Promise<void>;
+  addAnimeToCollection: (collectionId: string, animeId: number) => Promise<void>;
+  removeAnimeFromCollection: (collectionId: string, animeId: number) => Promise<void>;
+  reorderAnimeInCollection: (collectionId: string, orderedAnimeIds: number[]) => Promise<void>;
 }
 
 const UserTrackingContext = createContext<UserTrackingContextValue | null>(null);
@@ -32,7 +42,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
   // Helper to get last sync time key
   const getSyncTimeKey = useCallback((userId: string) => `user_lists_last_synced_${userId}`, []);
 
-  // Flush local modifications (is_synced === 0) to Supabase
+  // Flush local modifications (is_synced === 0) to Supabase for all three tables
   const flushDirtyQueue = useCallback(async () => {
     if (!user) return;
 
@@ -42,59 +52,139 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const dirtyRecords = await userDb.user_tracking
+      // 1. User tracking mutations
+      const dirtyTracking = await userDb.user_tracking
         .where('is_synced')
         .equals(0)
         .toArray();
 
-      if (dirtyRecords.length === 0) {
-        return;
+      if (dirtyTracking.length > 0) {
+        console.info(`[sync] Found ${dirtyTracking.length} unsynced tracking records. Flushing...`);
+        for (const record of dirtyTracking) {
+          try {
+            if (record.is_deleted) {
+              console.info(`[sync] Processing tombstone deletion for anilist_id=${record.anilist_id}...`);
+              const { error: remoteError } = await supabase
+                .from('user_tracking')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('anilist_id', record.anilist_id);
+
+              if (remoteError) throw remoteError;
+              await userDb.user_tracking.delete(record.anilist_id);
+              console.info(`[sync] Deleted anilist_id=${record.anilist_id} from remote and local DB.`);
+            } else {
+              console.info(`[sync] Processing upsert for anilist_id=${record.anilist_id}...`);
+              const { error: remoteError } = await supabase
+                .from('user_tracking')
+                .upsert({
+                  user_id: user.id,
+                  anilist_id: record.anilist_id,
+                  watch_status: record.status,
+                  episode_progress: record.episode_progress,
+                  score: record.score,
+                  notes: record.notes,
+                  last_modified: record.updated_at,
+                  is_deleted: false,
+                });
+
+              if (remoteError) throw remoteError;
+              await userDb.user_tracking.update(record.anilist_id, { is_synced: 1 });
+              console.info(`[sync] Synced anilist_id=${record.anilist_id} to Supabase.`);
+            }
+          } catch (recordError) {
+            console.error(`[sync] Failed to flush tracking record for anilist_id=${record.anilist_id}:`, recordError);
+          }
+        }
       }
 
-      console.info(`[sync] Found ${dirtyRecords.length} unsynced records. Flushing...`);
+      // 2. Collections mutations
+      const dirtyCollections = await userDb.collections
+        .where('is_synced')
+        .equals(0)
+        .toArray();
 
-      for (const record of dirtyRecords) {
-        try {
-          if (record.is_deleted) {
-            console.info(`[sync] Processing tombstone deletion for anilist_id=${record.anilist_id}...`);
-            
-            // Delete from Supabase
-            const { error: remoteError } = await supabase
-              .from('user_tracking')
-              .delete()
-              .eq('user_id', user.id)
-              .eq('anilist_id', record.anilist_id);
+      if (dirtyCollections.length > 0) {
+        console.info(`[sync] Found ${dirtyCollections.length} unsynced collections. Flushing...`);
+        for (const record of dirtyCollections) {
+          try {
+            if (record.is_deleted === 1) {
+              console.info(`[sync] Processing deletion for collection_id=${record.id}...`);
+              const { error: remoteError } = await supabase
+                .from('collections')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('collection_id', record.id);
 
-            if (remoteError) throw remoteError;
+              if (remoteError) throw remoteError;
+              await userDb.collections.delete(record.id);
+              console.info(`[sync] Deleted collection ${record.id} from remote and local DB.`);
+            } else {
+              console.info(`[sync] Processing upsert for collection_id=${record.id}...`);
+              const { error: remoteError } = await supabase
+                .from('collections')
+                .upsert({
+                  collection_id: record.id,
+                  user_id: user.id,
+                  title: record.title,
+                  description: record.description || null,
+                  created_at: new Date(record.createdAt).toISOString(),
+                  last_modified: new Date(record.last_modified).toISOString(),
+                  is_deleted: false,
+                });
 
-            // Delete physically from Dexie
-            await userDb.user_tracking.delete(record.anilist_id);
-            console.info(`[sync] Successfully deleted anilist_id=${record.anilist_id} from Supabase and local DB.`);
-          } else {
-            console.info(`[sync] Processing upsert for anilist_id=${record.anilist_id}...`);
-
-            // Upsert to Supabase
-            const { error: remoteError } = await supabase
-              .from('user_tracking')
-              .upsert({
-                user_id: user.id,
-                anilist_id: record.anilist_id,
-                watch_status: record.status,
-                episode_progress: record.episode_progress,
-                score: record.score,
-                notes: record.notes,
-                last_modified: record.updated_at,
-                is_deleted: false,
-              });
-
-            if (remoteError) throw remoteError;
-
-            // Mark as clean
-            await userDb.user_tracking.update(record.anilist_id, { is_synced: 1 });
-            console.info(`[sync] Successfully synced anilist_id=${record.anilist_id} to Supabase.`);
+              if (remoteError) throw remoteError;
+              await userDb.collections.update(record.id, { is_synced: 1 });
+              console.info(`[sync] Synced collection ${record.id} to Supabase.`);
+            }
+          } catch (colError) {
+            console.error(`[sync] Failed to flush collection ${record.id}:`, colError);
           }
-        } catch (recordError) {
-          console.error(`[sync] Failed to flush record for anilist_id=${record.anilist_id}:`, recordError);
+        }
+      }
+
+      // 3. Cross-ref mutations
+      const dirtyCrossRefs = await userDb.collection_anime_cross_ref
+        .where('is_synced')
+        .equals(0)
+        .toArray();
+
+      if (dirtyCrossRefs.length > 0) {
+        console.info(`[sync] Found ${dirtyCrossRefs.length} unsynced cross-references. Flushing...`);
+        for (const record of dirtyCrossRefs) {
+          try {
+            if (record.is_deleted === 1) {
+              console.info(`[sync] Processing deletion for cross-ref collectionId=${record.collectionId}, animeId=${record.animeId}...`);
+              const { error: remoteError } = await supabase
+                .from('collection_anime_cross_ref')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('collection_id', record.collectionId)
+                .eq('anime_id', record.animeId);
+
+              if (remoteError) throw remoteError;
+              await userDb.collection_anime_cross_ref.delete([record.collectionId, record.animeId]);
+              console.info(`[sync] Deleted cross-ref ${record.collectionId}-${record.animeId} from remote and local DB.`);
+            } else {
+              console.info(`[sync] Processing upsert for cross-ref collectionId=${record.collectionId}, animeId=${record.animeId}...`);
+              const { error: remoteError } = await supabase
+                .from('collection_anime_cross_ref')
+                .upsert({
+                  collection_id: record.collectionId,
+                  anime_id: record.animeId,
+                  user_id: user.id,
+                  order_index: record.orderIndex,
+                  last_modified: new Date(record.last_modified).toISOString(),
+                  is_deleted: false,
+                });
+
+              if (remoteError) throw remoteError;
+              await userDb.collection_anime_cross_ref.update([record.collectionId, record.animeId], { is_synced: 1 });
+              console.info(`[sync] Synced cross-ref ${record.collectionId}-${record.animeId} to Supabase.`);
+            }
+          } catch (refError) {
+            console.error(`[sync] Failed to flush cross-ref ${record.collectionId}-${record.animeId}:`, refError);
+          }
         }
       }
     } catch (err) {
@@ -102,7 +192,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Delta Sync Pull from Supabase
+  // Delta Sync Pull from Supabase for all three tables
   const sync = useCallback(async () => {
     if (!user) return;
 
@@ -110,6 +200,9 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
     console.info(`[sync] Background delta sync starting for user: ${user.id}`);
 
     try {
+      const limit = 1000;
+
+      // 1. User tracking delta sync
       const syncTimeKey = getSyncTimeKey(user.id);
       const dbCount = await userDb.user_tracking.count();
       const lastSyncTime = dbCount > 0 ? (localStorage.getItem(syncTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
@@ -117,14 +210,13 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
 
       let page = 0;
       let hasMore = true;
-      const limit = 1000;
       const fetchedItems: any[] = [];
 
       while (hasMore) {
         const start = page * limit;
         const end = start + limit - 1;
 
-        console.info(`[sync] Fetching page ${page} from Supabase (since ${lastSyncTime})...`);
+        console.info(`[sync] Fetching page ${page} of user_tracking...`);
         const { data, error } = await supabase
           .from('user_tracking')
           .select('anilist_id, watch_status, score, episode_progress, notes, last_modified, is_deleted')
@@ -146,7 +238,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      console.info(`[sync] Retrieved ${fetchedItems.length} delta updates from Supabase.`);
+      console.info(`[sync] Retrieved ${fetchedItems.length} user_tracking delta updates.`);
 
       if (fetchedItems.length > 0) {
         await userDb.transaction('rw', userDb.user_tracking, async () => {
@@ -154,38 +246,180 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
             const local = await userDb.user_tracking.get(item.anilist_id);
             
             if (item.is_deleted) {
-              console.info(`[sync] Remote tombstone found for anilist_id=${item.anilist_id}. Physically deleting locally.`);
+              console.info(`[sync] Remote tracking tombstone found for anilist_id=${item.anilist_id}. Deleting.`);
               await userDb.user_tracking.delete(item.anilist_id);
             } else {
               const remoteMilli = new Date(item.last_modified).getTime();
               const localMilli = local ? new Date(local.updated_at).getTime() : 0;
 
-              // Only overwrite if remote is strictly newer, or doesn't exist locally
               if (!local || remoteMilli > localMilli) {
-                console.info(`[sync] Upserting remote record locally: anilist_id=${item.anilist_id}`);
                 await userDb.user_tracking.put({
                   anilist_id: item.anilist_id,
                   status: item.watch_status,
                   updated_at: item.last_modified,
-                  is_synced: 1, // Clean
+                  is_synced: 1,
                   episode_progress: item.episode_progress || 0,
                   score: item.score,
                   notes: item.notes,
                   is_deleted: false,
                 });
-              } else {
-                console.info(`[sync] Local record is newer/equal for anilist_id=${item.anilist_id}. Keeping local.`);
               }
             }
           }
         });
       }
-
-      // Update sync metadata
       localStorage.setItem(syncTimeKey, syncStartTime);
+
+      // 2. Collections delta sync
+      const collectionsTimeKey = `collections_last_synced_${user.id}`;
+      const collectionsDbCount = await userDb.collections.count();
+      const collectionsLastSync = collectionsDbCount > 0 ? (localStorage.getItem(collectionsTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
+
+      let colsPage = 0;
+      let colsHasMore = true;
+      const fetchedCollections: any[] = [];
+
+      while (colsHasMore) {
+        const start = colsPage * limit;
+        const end = start + limit - 1;
+
+        console.info(`[sync] Fetching page ${colsPage} of collections...`);
+        const { data, error } = await supabase
+          .from('collections')
+          .select('collection_id, title, description, created_at, last_modified, is_deleted')
+          .eq('user_id', user.id)
+          .gt('last_modified', collectionsLastSync)
+          .range(start, end);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          colsHasMore = false;
+        } else {
+          fetchedCollections.push(...data);
+          if (data.length < limit) {
+            colsHasMore = false;
+          } else {
+            colsPage++;
+          }
+        }
+      }
+
+      console.info(`[sync] Retrieved ${fetchedCollections.length} collections delta updates.`);
+
+      if (fetchedCollections.length > 0) {
+        const puts: CollectionRecord[] = [];
+        const deletes: string[] = [];
+
+        for (const item of fetchedCollections) {
+          if (item.is_deleted) {
+            deletes.push(item.collection_id);
+          } else {
+            const local = await userDb.collections.get(item.collection_id);
+            const remoteMilli = new Date(item.last_modified).getTime();
+            const localMilli = local ? Number(local.last_modified) : 0;
+
+            if (!local || remoteMilli > localMilli) {
+              puts.push({
+                id: item.collection_id,
+                title: item.title,
+                description: item.description || '',
+                createdAt: item.created_at ? new Date(item.created_at).getTime() : Date.now(),
+                is_synced: 1,
+                is_deleted: 0,
+                last_modified: new Date(item.last_modified).getTime(),
+              });
+            }
+          }
+        }
+
+        if (deletes.length > 0) {
+          await userDb.collections.bulkDelete(deletes);
+          console.info(`[sync] Deleted ${deletes.length} collections locally.`);
+        }
+        if (puts.length > 0) {
+          await userDb.collections.bulkPut(puts);
+          console.info(`[sync] Saved ${puts.length} collections locally.`);
+        }
+      }
+      localStorage.setItem(collectionsTimeKey, syncStartTime);
+
+      // 3. Cross-refs delta sync
+      const crossRefsTimeKey = `cross_ref_last_synced_${user.id}`;
+      const crossRefsDbCount = await userDb.collection_anime_cross_ref.count();
+      const crossRefsLastSync = crossRefsDbCount > 0 ? (localStorage.getItem(crossRefsTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
+
+      let refsPage = 0;
+      let refsHasMore = true;
+      const fetchedCrossRefs: any[] = [];
+
+      while (refsHasMore) {
+        const start = refsPage * limit;
+        const end = start + limit - 1;
+
+        console.info(`[sync] Fetching page ${refsPage} of collection_anime_cross_ref...`);
+        const { data, error } = await supabase
+          .from('collection_anime_cross_ref')
+          .select('collection_id, anime_id, order_index, last_modified, is_deleted')
+          .eq('user_id', user.id)
+          .gt('last_modified', crossRefsLastSync)
+          .range(start, end);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          refsHasMore = false;
+        } else {
+          fetchedCrossRefs.push(...data);
+          if (data.length < limit) {
+            refsHasMore = false;
+          } else {
+            refsPage++;
+          }
+        }
+      }
+
+      console.info(`[sync] Retrieved ${fetchedCrossRefs.length} cross-ref delta updates.`);
+
+      if (fetchedCrossRefs.length > 0) {
+        const puts: CollectionAnimeCrossRefRecord[] = [];
+        const deletes: [string, number][] = [];
+
+        for (const item of fetchedCrossRefs) {
+          if (item.is_deleted) {
+            deletes.push([item.collection_id, item.anime_id]);
+          } else {
+            const local = await userDb.collection_anime_cross_ref.get([item.collection_id, item.anime_id]);
+            const remoteMilli = new Date(item.last_modified).getTime();
+            const localMilli = local ? Number(local.last_modified) : 0;
+
+            if (!local || remoteMilli > localMilli) {
+              puts.push({
+                collectionId: item.collection_id,
+                animeId: item.anime_id,
+                orderIndex: item.order_index || 0,
+                is_synced: 1,
+                is_deleted: 0,
+                last_modified: new Date(item.last_modified).getTime(),
+              });
+            }
+          }
+        }
+
+        if (deletes.length > 0) {
+          await userDb.collection_anime_cross_ref.bulkDelete(deletes);
+          console.info(`[sync] Deleted ${deletes.length} cross-refs locally.`);
+        }
+        if (puts.length > 0) {
+          await userDb.collection_anime_cross_ref.bulkPut(puts);
+          console.info(`[sync] Saved ${puts.length} cross-refs locally.`);
+        }
+      }
+      localStorage.setItem(crossRefsTimeKey, syncStartTime);
+
       setLastSyncedAt(syncStartTime);
       setSyncStatus('idle');
-      console.info('[sync] Delta sync completed successfully.');
+      console.info('[sync] Delta sync completed successfully for all tables.');
     } catch (err) {
       console.error('[sync] Sync cycle failed:', err);
       setSyncStatus('error');
@@ -289,6 +523,255 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  // Write-Through: Save custom collection
+  const saveCollection = useCallback(
+    async (id: string, title: string, description: string) => {
+      if (!user) return;
+
+      const now = Date.now();
+      const existing = await userDb.collections.get(id);
+
+      const record: CollectionRecord = {
+        id,
+        title,
+        description,
+        createdAt: existing?.createdAt ?? now,
+        is_synced: 0,
+        is_deleted: 0,
+        last_modified: now,
+      };
+
+      console.info(`[userDb] Local collection write: id=${id}`, record);
+      await userDb.collections.put(record);
+
+      try {
+        console.info(`[sync] Immediate push upsert for collection_id=${id}...`);
+        const { error: remoteError } = await supabase
+          .from('collections')
+          .upsert({
+            collection_id: id,
+            user_id: user.id,
+            title: title,
+            description: description || null,
+            created_at: new Date(record.createdAt).toISOString(),
+            last_modified: new Date(now).toISOString(),
+            is_deleted: false,
+          });
+
+        if (remoteError) throw remoteError;
+
+        await userDb.collections.update(id, { is_synced: 1 });
+        console.info(`[sync] Immediate collection push successful. Marked clean for id=${id}.`);
+      } catch (err) {
+        console.warn(`[sync] Immediate collection push failed for id=${id}:`, err);
+      }
+    },
+    [user]
+  );
+
+  // Write-Through: Soft delete custom collection
+  const removeCollection = useCallback(
+    async (id: string) => {
+      if (!user) return;
+
+      const now = Date.now();
+      const existing = await userDb.collections.get(id);
+      if (!existing) return;
+
+      const tombstone: CollectionRecord = {
+        ...existing,
+        is_synced: 0,
+        is_deleted: 1,
+        last_modified: now,
+      };
+
+      console.info(`[userDb] Local collection soft delete: id=${id}`);
+      await userDb.collections.put(tombstone);
+
+      // Soft delete all cross-refs of this collection locally so they flush to supabase
+      const refs = await userDb.collection_anime_cross_ref
+        .where('collectionId')
+        .equals(id)
+        .toArray();
+      for (const ref of refs) {
+        await userDb.collection_anime_cross_ref.put({
+          ...ref,
+          is_synced: 0,
+          is_deleted: 1,
+          last_modified: now,
+        });
+      }
+
+      // Immediate collection push delete
+      try {
+        console.info(`[sync] Immediate push deletion for collection_id=${id}...`);
+        const { error: remoteError } = await supabase
+          .from('collections')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('collection_id', id);
+
+        if (remoteError) throw remoteError;
+
+        await userDb.collections.delete(id);
+        console.info(`[sync] Immediate collection deletion successful. Evicted id=${id} locally.`);
+      } catch (err) {
+        console.warn(`[sync] Immediate collection deletion push failed for id=${id}:`, err);
+      }
+
+      // Immediate cross-refs push delete
+      for (const ref of refs) {
+        try {
+          const { error: remoteError } = await supabase
+            .from('collection_anime_cross_ref')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('collection_id', id)
+            .eq('anime_id', ref.animeId);
+
+          if (remoteError) throw remoteError;
+
+          await userDb.collection_anime_cross_ref.delete([id, ref.animeId]);
+        } catch (err) {
+          console.warn(`[sync] Immediate cross-ref deletion push failed for ${id}-${ref.animeId}:`, err);
+        }
+      }
+    },
+    [user]
+  );
+
+  // Write-Through: Append anime to custom collection
+  const addAnimeToCollection = useCallback(
+    async (collectionId: string, animeId: number) => {
+      if (!user) return;
+
+      const now = Date.now();
+      const refs = await userDb.collection_anime_cross_ref
+        .where('collectionId')
+        .equals(collectionId)
+        .toArray();
+      const activeRefs = refs.filter((r) => r.is_deleted !== 1);
+      const nextIndex = activeRefs.length > 0 ? Math.max(...activeRefs.map((r) => r.orderIndex)) + 1 : 0;
+
+      const record: CollectionAnimeCrossRefRecord = {
+        collectionId,
+        animeId,
+        orderIndex: nextIndex,
+        is_synced: 0,
+        is_deleted: 0,
+        last_modified: now,
+      };
+
+      console.info(`[userDb] Local cross-ref write: collectionId=${collectionId}, animeId=${animeId}`, record);
+      await userDb.collection_anime_cross_ref.put(record);
+
+      try {
+        console.info(`[sync] Immediate push upsert for cross-ref collectionId=${collectionId}, animeId=${animeId}...`);
+        const { error: remoteError } = await supabase
+          .from('collection_anime_cross_ref')
+          .upsert({
+            collection_id: collectionId,
+            anime_id: animeId,
+            user_id: user.id,
+            order_index: nextIndex,
+            last_modified: new Date(now).toISOString(),
+            is_deleted: false,
+          });
+
+        if (remoteError) throw remoteError;
+
+        await userDb.collection_anime_cross_ref.update([collectionId, animeId], { is_synced: 1 });
+        console.info(`[sync] Immediate cross-ref push successful for ${collectionId}-${animeId}.`);
+      } catch (err) {
+        console.warn(`[sync] Immediate cross-ref push failed for ${collectionId}-${animeId}:`, err);
+      }
+    },
+    [user]
+  );
+
+  // Write-Through: Remove anime from custom collection
+  const removeAnimeFromCollection = useCallback(
+    async (collectionId: string, animeId: number) => {
+      if (!user) return;
+
+      const now = Date.now();
+      const existing = await userDb.collection_anime_cross_ref.get([collectionId, animeId]);
+      if (!existing) return;
+
+      const tombstone: CollectionAnimeCrossRefRecord = {
+        ...existing,
+        is_synced: 0,
+        is_deleted: 1,
+        last_modified: now,
+      };
+
+      console.info(`[userDb] Local cross-ref soft delete: collectionId=${collectionId}, animeId=${animeId}`);
+      await userDb.collection_anime_cross_ref.put(tombstone);
+
+      try {
+        console.info(`[sync] Immediate push deletion for cross-ref ${collectionId}-${animeId}...`);
+        const { error: remoteError } = await supabase
+          .from('collection_anime_cross_ref')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('collection_id', collectionId)
+          .eq('anime_id', animeId);
+
+        if (remoteError) throw remoteError;
+
+        await userDb.collection_anime_cross_ref.delete([collectionId, animeId]);
+        console.info(`[sync] Immediate cross-ref deletion successful for ${collectionId}-${animeId}.`);
+      } catch (err) {
+        console.warn(`[sync] Immediate cross-ref deletion push failed for ${collectionId}-${animeId}:`, err);
+      }
+    },
+    [user]
+  );
+
+  // Write-Through: Reorder anime inside custom collection
+  const reorderAnimeInCollection = useCallback(
+    async (collectionId: string, orderedAnimeIds: number[]) => {
+      if (!user) return;
+
+      const now = Date.now();
+
+      for (let i = 0; i < orderedAnimeIds.length; i++) {
+        const animeId = orderedAnimeIds[i];
+        const existing = await userDb.collection_anime_cross_ref.get([collectionId, animeId]);
+        const record: CollectionAnimeCrossRefRecord = {
+          collectionId,
+          animeId,
+          orderIndex: i,
+          is_synced: 0,
+          is_deleted: existing?.is_deleted ?? 0,
+          last_modified: now,
+        };
+
+        await userDb.collection_anime_cross_ref.put(record);
+
+        try {
+          const { error: remoteError } = await supabase
+            .from('collection_anime_cross_ref')
+            .upsert({
+              collection_id: collectionId,
+              anime_id: animeId,
+              user_id: user.id,
+              order_index: i,
+              last_modified: new Date(now).toISOString(),
+              is_deleted: record.is_deleted === 1,
+            });
+
+          if (remoteError) throw remoteError;
+
+          await userDb.collection_anime_cross_ref.update([collectionId, animeId], { is_synced: 1 });
+        } catch (err) {
+          console.warn(`[sync] Immediate cross-ref reorder push failed for ${collectionId}-${animeId}:`, err);
+        }
+      }
+    },
+    [user]
+  );
+
   // Monitor auth state to trigger initial sync or clear IndexedDB
   useEffect(() => {
     if (isLoading) return;
@@ -308,8 +791,24 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // Logged out: clean database and keys
-        console.info('[userDb] User signed out. Clearing user_tracking store...');
+        console.info('[userDb] User signed out. Clearing stores...');
         await userDb.user_tracking.clear();
+        await userDb.collections.clear();
+        await userDb.collection_anime_cross_ref.clear();
+
+        // Remove all sync keys from localStorage
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (
+            key &&
+            (key.startsWith('user_lists_last_synced_') ||
+              key.startsWith('collections_last_synced_') ||
+              key.startsWith('cross_ref_last_synced_'))
+          ) {
+            localStorage.removeItem(key);
+          }
+        }
+
         setLastSyncedAt(null);
       }
     }
@@ -364,6 +863,11 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
         flushDirtyQueue,
         saveTracking,
         removeTracking,
+        saveCollection,
+        removeCollection,
+        addAnimeToCollection,
+        removeAnimeFromCollection,
+        reorderAnimeInCollection,
       }}
     >
       {children}
@@ -378,3 +882,4 @@ export function useUserTracking() {
   }
   return context;
 }
+

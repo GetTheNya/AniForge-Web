@@ -9,6 +9,8 @@ import SearchBar from './components/SearchBar';
 import FilterPanel from './components/FilterPanel';
 import AnimeCard from './components/AnimeCard';
 import AnimeDetailView from './components/AnimeDetailView';
+import LibraryView from './components/LibraryView';
+import CollectionDetailsView from './components/CollectionDetailsView';
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
@@ -34,7 +36,7 @@ function App() {
   );
 
   // Loading / initial download state
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime';
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime' && pathname !== '/library' && pathname !== '/collection';
 
   if (isInitialLoading) {
     return (
@@ -101,15 +103,23 @@ function App() {
   }
 
   const isDetailPage = pathname === '/anime';
+  const isLibraryPage = pathname === '/library';
+  const isCollectionPage = pathname === '/collection';
   const queryParams = new URLSearchParams(search);
   const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
+  const collectionId = isCollectionPage ? queryParams.get('id') : null;
 
   return (
     <Layout>
       {isDetailPage && animeId ? (
         <AnimeDetailView key={animeId} anilistId={animeId} />
+      ) : isLibraryPage ? (
+        <LibraryView />
+      ) : isCollectionPage ? (
+        <CollectionDetailsView collectionId={collectionId} />
       ) : (
         <div className="space-y-6">
+
           {/* Search + filters */}
           <div className="space-y-4">
             <SearchBar
