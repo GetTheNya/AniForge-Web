@@ -25,7 +25,7 @@ interface UserTrackingContextValue {
 const UserTrackingContext = createContext<UserTrackingContextValue | null>(null);
 
 export function UserTrackingProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
@@ -111,7 +111,8 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
 
     try {
       const syncTimeKey = getSyncTimeKey(user.id);
-      const lastSyncTime = localStorage.getItem(syncTimeKey) || '1970-01-01T00:00:00Z';
+      const dbCount = await userDb.user_tracking.count();
+      const lastSyncTime = dbCount > 0 ? (localStorage.getItem(syncTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
       const syncStartTime = new Date().toISOString();
 
       let page = 0;
@@ -290,6 +291,8 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
 
   // Monitor auth state to trigger initial sync or clear IndexedDB
   useEffect(() => {
+    if (isLoading) return;
+
     let active = true;
 
     async function handleAuthChange() {
@@ -316,7 +319,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [user, sync, flushDirtyQueue, getSyncTimeKey]);
+  }, [user, isLoading, sync, flushDirtyQueue, getSyncTimeKey]);
 
   // Lifecycle listeners: Reconnection, Page focus, and Periodic timer
   useEffect(() => {
