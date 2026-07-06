@@ -32,6 +32,7 @@ const initSqlJs = (typeof initSqlJsModule === 'function'
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 let activeDb: SqlJsDatabase | null = null;
+let initPromise: Promise<Database | null> | null = null;
 
 // SqlJsStatic type — what initSqlJs resolves to
 interface SqlJsStatic {
@@ -104,24 +105,41 @@ function setActiveVersion(version: number, generatedAt?: string): void {
 // ─── Phase A: Instant boot from cache ───────────────────────────────────────────
 
 export async function initDatabase(): Promise<Database | null> {
-  const version = getActiveVersion();
-  if (version === null) {
-    console.info('[sqlite] No cached version found. Fresh install.');
-    return null;
+  if (activeDb) {
+    return activeDb;
   }
 
-  console.info(`[sqlite] Booting from cached version: v${version}`);
-  const buffer = await loadFromCache(version);
-  if (!buffer) {
-    console.warn('[sqlite] Cache miss for version', version);
-    localStorage.removeItem(LS_KEY_VERSION);
-    return null;
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        const version = getActiveVersion();
+        if (version === null) {
+          console.info('[sqlite] No cached version found. Fresh install.');
+          initPromise = null;
+          return null;
+        }
+
+        console.info(`[sqlite] Booting from cached version: v${version}`);
+        const buffer = await loadFromCache(version);
+        if (!buffer) {
+          console.warn('[sqlite] Cache miss for version', version);
+          localStorage.removeItem(LS_KEY_VERSION);
+          initPromise = null;
+          return null;
+        }
+
+        const SQL = await getSql();
+        activeDb = new SQL.Database(new Uint8Array(buffer));
+        console.info(`[sqlite] Database v${version} loaded (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB)`);
+        return activeDb;
+      } catch (e) {
+        initPromise = null;
+        throw e;
+      }
+    })();
   }
 
-  const SQL = await getSql();
-  activeDb = new SQL.Database(new Uint8Array(buffer));
-  console.info(`[sqlite] Database v${version} loaded (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB)`);
-  return activeDb;
+  return initPromise;
 }
 
 // ─── Phase B: Background version check + streaming download ─────────────────────
@@ -234,6 +252,7 @@ export async function commitSwap(
 
   // 4. Atomically swap the reference
   activeDb = newDb;
+  initPromise = null;
 
   // 5. Update localStorage metadata
   setActiveVersion(versionInfo.version, versionInfo.generatedAt);

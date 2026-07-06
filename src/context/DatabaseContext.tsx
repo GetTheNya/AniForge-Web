@@ -48,7 +48,8 @@ type DbAction =
   | { type: 'PROCESSING' }
   | { type: 'SWAPPED'; db: Database; version: number; recordCount: number }
   | { type: 'ERROR'; error: string }
-  | { type: 'PROGRESS'; progress: number };
+  | { type: 'PROGRESS'; progress: number }
+  | { type: 'CHECK_FINISHED' };
 
 function reducer(state: DbContextState, action: DbAction): DbContextState {
   switch (action.type) {
@@ -83,6 +84,8 @@ function reducer(state: DbContextState, action: DbAction): DbContextState {
       return { ...state, status: 'error', error: action.error };
     case 'PROGRESS':
       return { ...state, progress: action.progress };
+    case 'CHECK_FINISHED':
+      return { ...state, status: 'ready' };
     default:
       return state;
   }
@@ -118,11 +121,13 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
 
     async function boot() {
       dispatch({ type: 'LOADING' });
+      let dbLoaded = false;
 
       // Phase A: Try instant boot from cache
       try {
         const cachedDb = await initDatabase();
         if (cachedDb && !cancelled) {
+          dbLoaded = true;
           const count = getRecordCount(cachedDb);
           dispatch({
             type: 'READY',
@@ -141,15 +146,19 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
 
       const versionInfo = await fetchVersionInfo();
       if (!versionInfo || cancelled) {
-        if (!state.db && !cancelled) {
+        if (cancelled) return;
+        if (!dbLoaded) {
           dispatch({ type: 'ERROR', error: 'Failed to fetch catalog version info' });
+        } else {
+          dispatch({ type: 'CHECK_FINISHED' });
         }
         return;
       }
 
       const localVersion = getActiveVersion();
-      if (localVersion !== null && versionInfo.version <= localVersion) {
+      if (dbLoaded && localVersion !== null && versionInfo.version <= localVersion) {
         console.info('[DatabaseContext] Catalog is up to date');
+        dispatch({ type: 'CHECK_FINISHED' });
         return;
       }
 
