@@ -43,9 +43,7 @@ interface SqlJsStatic {
 function getSql(): Promise<SqlJsStatic> {
   if (!sqlPromise) {
     sqlPromise = initSqlJs({
-      // Load WASM binary from CDN — avoids bundling the 1.5MB file
-      locateFile: (file: string) =>
-        `https://sql.js.org/dist/${file}`,
+      locateFile: (file: string) => `/${file}`,
     }) as Promise<SqlJsStatic>;
   }
   return sqlPromise;

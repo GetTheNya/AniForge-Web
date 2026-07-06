@@ -8,8 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  assetsInclude: ['**/*.wasm'],
   optimizeDeps: {
     // sql.js bundles WASM and needs special handling
-    exclude: ['sql.js'],
+    include: ['sql.js'],
   },
 })
