@@ -3,6 +3,7 @@
  */
 
 import type { Anime } from '../types/anime';
+import { useNavigation } from '../hooks/useNavigation';
 import StatusBadge from './StatusBadge';
 
 interface AnimeCardProps {
@@ -11,6 +12,7 @@ interface AnimeCardProps {
 }
 
 export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
+  const { navigate } = useNavigation();
   const coverUrl = anime.cover_large || anime.cover_extra_large;
   const title = anime.title_en || anime.title_romaji;
   const subtitle = anime.title_en ? anime.title_romaji : anime.title_uk;
@@ -26,6 +28,7 @@ export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
     <div
       className="glass-card group overflow-hidden animate-scale-in cursor-pointer"
       style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
+      onClick={() => navigate('/anime', `?id=${anime.anilist_id}`)}
     >
       {/* Cover image */}
       <div className="relative aspect-[3/4] overflow-hidden">

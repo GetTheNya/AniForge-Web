@@ -8,13 +8,16 @@ import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
 import FilterPanel from './components/FilterPanel';
 import AnimeCard from './components/AnimeCard';
+import AnimeDetailView from './components/AnimeDetailView';
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
+import { useNavigation } from './hooks/useNavigation';
 import { EMPTY_FILTER, type SearchFilterQuery } from './types/filters';
 
 function App() {
   const { status, error: dbError, progress } = useDatabase();
+  const { pathname, search } = useNavigation();
   const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
   const { results, isSearching, totalCount, error: searchError } = useAnimeSearch(filter);
   const catalogMeta = useCatalogMeta();
@@ -31,7 +34,7 @@ function App() {
   );
 
   // Loading / initial download state
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length;
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime';
 
   if (isInitialLoading) {
     return (
@@ -97,56 +100,64 @@ function App() {
     );
   }
 
+  const isDetailPage = pathname === '/anime';
+  const queryParams = new URLSearchParams(search);
+  const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
+
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Search + filters */}
-        <div className="space-y-4">
-          <SearchBar
-            value={filter.textQuery}
-            onChange={handleTextChange}
-            resultCount={totalCount}
-            isSearching={isSearching}
-          />
-          <FilterPanel
-            filter={filter}
-            onChange={setFilter}
-            genres={catalogMeta.genres}
-            tags={catalogMeta.tags}
-            studios={catalogMeta.studios}
-            isLoaded={catalogMeta.isLoaded}
-          />
-        </div>
-
-        {/* Search error */}
-        {searchError && (
-          <div className="glass-card p-4 border-[var(--color-accent-rose)]/30">
-            <p className="text-sm text-[var(--color-accent-rose)]">{searchError}</p>
+      {isDetailPage && animeId ? (
+        <AnimeDetailView anilistId={animeId} />
+      ) : (
+        <div className="space-y-6">
+          {/* Search + filters */}
+          <div className="space-y-4">
+            <SearchBar
+              value={filter.textQuery}
+              onChange={handleTextChange}
+              resultCount={totalCount}
+              isSearching={isSearching}
+            />
+            <FilterPanel
+              filter={filter}
+              onChange={setFilter}
+              genres={catalogMeta.genres}
+              tags={catalogMeta.tags}
+              studios={catalogMeta.studios}
+              isLoaded={catalogMeta.isLoaded}
+            />
           </div>
-        )}
 
-        {/* Results grid */}
-        {results.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {results.map((anime, i) => (
-              <AnimeCard key={anime.anilist_id} anime={anime} index={i} />
-            ))}
-          </div>
-        ) : (
-          status === 'ready' && !isSearching && (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 animate-fade-in">
-              <div className="w-16 h-16 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border-glass)] flex items-center justify-center">
-                <svg className="w-7 h-7 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {filter.textQuery ? 'No anime found matching your search' : 'Start searching to explore the catalog'}
-              </p>
+          {/* Search error */}
+          {searchError && (
+            <div className="glass-card p-4 border-[var(--color-accent-rose)]/30">
+              <p className="text-sm text-[var(--color-accent-rose)]">{searchError}</p>
             </div>
-          )
-        )}
-      </div>
+          )}
+
+          {/* Results grid */}
+          {results.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {results.map((anime, i) => (
+                <AnimeCard key={anime.anilist_id} anime={anime} index={i} />
+              ))}
+            </div>
+          ) : (
+            status === 'ready' && !isSearching && (
+              <div className="flex flex-col items-center justify-center py-20 gap-3 animate-fade-in">
+                <div className="w-16 h-16 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border-glass)] flex items-center justify-center">
+                  <svg className="w-7 h-7 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {filter.textQuery ? 'No anime found matching your search' : 'Start searching to explore the catalog'}
+                </p>
+              </div>
+            )
+          )}
+        </div>
+      )}
     </Layout>
   );
 }
