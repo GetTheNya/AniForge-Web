@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { status, version, recordCount, progress } = useDatabase();
-  const { user, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { user, profile, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const { pathname, navigate } = useNavigation();
 
   return (
@@ -77,10 +77,7 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="flex items-center gap-3">
                   <div className="text-right hidden sm:block">
                     <p className="text-xs font-medium text-[var(--color-text-primary)]">
-                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-                    </p>
-                    <p className="text-[10px] text-[var(--color-text-tertiary)]">
-                      {user.email}
+                      {profile?.username || user.email?.split('@')[0] || 'User'}
                     </p>
                   </div>
                   <button

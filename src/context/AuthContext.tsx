@@ -14,10 +14,13 @@ import {
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 
+import type { UserProfile } from '../types/supabase';
+
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  profile: UserProfile | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -28,21 +31,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
+    // Helper to fetch user profile
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('id, username')
+          .eq('id', userId)
+          .single();
+        if (error) {
+          console.error('[auth] Failed to fetch user profile:', error);
+          return null;
+        }
+        return data as UserProfile;
+      } catch (err) {
+        console.error('[auth] Error fetching user profile:', err);
+        return null;
+      }
+    };
+
+    // Process session and profile loading
+    const handleSessionChange = async (s: Session | null) => {
+      setSession(s);
+      const currentUser = s?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const prof = await fetchProfile(currentUser.id);
+        setProfile(prof);
+      } else {
+        setProfile(null);
+      }
+      setIsLoading(false);
+    };
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      setIsLoading(false);
+      handleSessionChange(s);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, s) => {
-        setSession(s);
-        setUser(s?.user ?? null);
-        setIsLoading(false);
+        handleSessionChange(s);
       },
     );
 
@@ -72,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, signInWithGoogle, signOut }}
+      value={{ user, session, isLoading, profile, signInWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>
