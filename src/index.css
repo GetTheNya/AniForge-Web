@@ -1,0 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ─── AniForge Design Tokens (Tailwind v4 @theme) ───────────────────────────── */
+
+@theme {
+  /* Background layers */
+  --color-bg-base: #0C0C0E;
+  --color-bg-elevated: #131316;
+  --color-bg-card: oklch(0.18 0.005 285 / 0.6);
+  --color-bg-card-hover: oklch(0.22 0.008 285 / 0.7);
+  --color-bg-input: oklch(0.15 0.005 285 / 0.8);
+  --color-bg-overlay: oklch(0.08 0.005 285 / 0.85);
+
+  /* Borders */
+  --color-border-glass: oklch(0.95 0 0 / 0.08);
+  --color-border-glass-hover: oklch(0.95 0 0 / 0.14);
+  --color-border-accent: oklch(0.65 0.25 285 / 0.4);
+
+  /* Accent palette — violet→cyan gradient */
+  --color-accent-primary: #8B5CF6;
+  --color-accent-secondary: #06B6D4;
+  --color-accent-warm: #F59E0B;
+  --color-accent-rose: #F43F5E;
+  --color-accent-emerald: #10B981;
+
+  /* Text hierarchy */
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary: #64748B;
+  --color-text-muted: #475569;
+
+  /* Status colors */
+  --color-status-releasing: #10B981;
+  --color-status-finished: #6366F1;
+  --color-status-upcoming: #F59E0B;
+  --color-status-cancelled: #EF4444;
+  --color-status-hiatus: #8B5CF6;
+
+  /* Score colors */
+  --color-score-high: #10B981;
+  --color-score-mid: #F59E0B;
+  --color-score-low: #EF4444;
+
+  /* Shadows */
+  --shadow-glass: 0 8px 32px oklch(0 0 0 / 0.4);
+  --shadow-card: 0 4px 24px oklch(0 0 0 / 0.3);
+  --shadow-glow-violet: 0 0 40px oklch(0.55 0.25 285 / 0.15);
+  --shadow-glow-cyan: 0 0 40px oklch(0.7 0.15 200 / 0.12);
+
+  /* Border radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Typography */
+  --font-sans: 'Inter', 'system-ui', '-apple-system', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─── Global Styles ──────────────────────────────────────────────────────────── */
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.3 0.01 285) transparent;
+  }
+
+  html {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.25 0.12 285 / 0.15), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 50%, oklch(0.3 0.1 200 / 0.08), transparent),
+      var(--color-bg-base);
+  }
+
+  ::selection {
+    background-color: oklch(0.55 0.25 285 / 0.35);
+    color: white;
+  }
+}
+
+/* ─── Glassmorphic Utility Classes ───────────────────────────────────────────── */
+
+@layer components {
+  .glass-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: var(--shadow-card);
+    transition:
+      background var(--transition-smooth),
+      border-color var(--transition-smooth),
+      box-shadow var(--transition-smooth);
+  }
+
+  .glass-card:hover {
+    background: var(--color-bg-card-hover);
+    border-color: var(--color-border-glass-hover);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-input {
+    background: var(--color-bg-input);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    color: var(--color-text-primary);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-input:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px oklch(0.55 0.25 285 / 0.15), var(--shadow-glow-violet);
+  }
+
+  .glass-input::placeholder {
+    color: var(--color-text-tertiary);
+  }
+
+  .glass-button {
+    background: linear-gradient(135deg, var(--color-accent-primary), oklch(0.5 0.22 285));
+    border: 1px solid oklch(0.6 0.2 285 / 0.3);
+    border-radius: var(--radius-md);
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    cursor: pointer;
+    transition: all var(--transition-smooth);
+    box-shadow: 0 4px 16px oklch(0.55 0.25 285 / 0.25);
+  }
+
+  .glass-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px oklch(0.55 0.25 285 / 0.35);
+  }
+
+  .glass-button:active {
+    transform: translateY(0);
+  }
+
+  .glass-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1px solid oklch(0.95 0 0 / 0.1);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Loading skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      oklch(0.2 0.005 285 / 0.6) 0%,
+      oklch(0.25 0.008 285 / 0.8) 50%,
+      oklch(0.2 0.005 285 / 0.6) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+    border-radius: var(--radius-md);
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Progress bar animation */
+  .progress-glow {
+    box-shadow: 0 0 12px var(--color-accent-primary), 0 0 4px var(--color-accent-secondary);
+  }
+
+  /* Fade-in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scale-in for cards */
+  .animate-scale-in {
+    animation: scaleIn 0.3s var(--transition-spring) forwards;
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
