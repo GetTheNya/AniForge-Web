@@ -26,11 +26,13 @@ export default function Layout({ children }: LayoutProps) {
                 className="flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate('/')}
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] flex items-center justify-center shadow-lg">
-                  <span className="text-white font-black text-sm">A</span>
-                </div>
+                <img
+                  src="/favicon.svg"
+                  alt="AniForge Web Logo"
+                  className="w-8 h-8 rounded-lg object-contain shadow-lg"
+                />
                 <div>
-                  <h1 className="text-lg font-bold bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent">
+                  <h1 className="text-lg font-bold text-white">
                     AniForge Web
                   </h1>
                 </div>
