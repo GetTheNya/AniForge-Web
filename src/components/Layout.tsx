@@ -125,54 +125,56 @@ export default function Layout({ children }: LayoutProps) {
                 progress={progress}
               />
 
-              {/* Auth button */}
-              {authLoading ? (
-                <div className="w-8 h-8 rounded-full skeleton" />
-              ) : user ? (
-                <div className="flex items-center gap-3">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-xs font-medium text-[var(--color-text-primary)]">
-                      {profile?.username || user.email?.split('@')[0] || 'User'}
-                    </p>
+              {/* Auth button (Desktop only) */}
+              <div className="hidden lg:block">
+                {authLoading ? (
+                  <div className="w-8 h-8 rounded-full skeleton" />
+                ) : user ? (
+                  <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-xs font-medium text-[var(--color-text-primary)]">
+                        {profile?.username || user.email?.split('@')[0] || 'User'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={signOut}
+                      className="glass-badge bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] border-[var(--color-border-glass)] hover:border-[var(--color-accent-rose)]/40 hover:text-[var(--color-accent-rose)] transition-all cursor-pointer text-xs py-1.5 px-3"
+                    >
+                      {t('common.signOut')}
+                    </button>
                   </div>
+                ) : (
                   <button
-                    onClick={signOut}
-                    className="glass-badge bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] border-[var(--color-border-glass)] hover:border-[var(--color-accent-rose)]/40 hover:text-[var(--color-accent-rose)] transition-all cursor-pointer text-xs py-1.5 px-3"
+                    onClick={signInWithGoogle}
+                    className="flex items-center gap-2 glass-button text-sm"
+                    id="google-sign-in-btn"
                   >
-                    {t('common.signOut')}
+                    {/* Google icon */}
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path
+                        fill="#fff"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                      />
+                      <path
+                        fill="#fff"
+                        opacity=".8"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#fff"
+                        opacity=".6"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#fff"
+                        opacity=".4"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
+                    </svg>
+                    {t('common.signInGoogle')}
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={signInWithGoogle}
-                  className="flex items-center gap-2 glass-button text-sm"
-                  id="google-sign-in-btn"
-                >
-                  {/* Google icon */}
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#fff"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                    />
-                    <path
-                      fill="#fff"
-                      opacity=".8"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#fff"
-                      opacity=".6"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#fff"
-                      opacity=".4"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  {t('common.signInGoogle')}
-                </button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -278,6 +280,64 @@ export default function Layout({ children }: LayoutProps) {
               <span>{t('nav.androidApp')}</span>
             </button>
           </nav>
+
+          {/* Auth section for mobile (inside sidebar) */}
+          <div className="pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-2">
+            {authLoading ? (
+              <div className="w-full h-10 rounded-xl skeleton" />
+            ) : user ? (
+              <div className="flex flex-col gap-3 px-1">
+                <div className="flex flex-col">
+                  <span className="text-[var(--color-text-tertiary)] text-[10px] font-bold uppercase tracking-wider">{t('common.signedInAs', 'Signed in as')}</span>
+                  <span className="text-xs font-bold text-[var(--color-text-primary)] truncate mt-0.5">
+                    {profile?.username || user.email?.split('@')[0] || 'User'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    signOut();
+                  }}
+                  className="w-full justify-center flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-rose)]/40 hover:text-[var(--color-accent-rose)] transition-all cursor-pointer"
+                >
+                  🚪 {t('common.signOut')}
+                </button>
+              </div>
+            ) : (
+              <div className="px-1">
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    signInWithGoogle();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-input)] hover:bg-[var(--color-bg-card-hover)] text-xs font-semibold text-white transition-all cursor-pointer"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#fff"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    />
+                    <path
+                      fill="#fff"
+                      opacity=".8"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#fff"
+                      opacity=".6"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#fff"
+                      opacity=".4"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  <span>{t('common.signInGoogle')}</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Database status for mobile (inside sidebar) */}
           <div className="pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-2">
