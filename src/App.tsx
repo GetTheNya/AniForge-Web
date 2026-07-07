@@ -3,7 +3,7 @@
  * Assembles the search interface with full filter panel and anime grid.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
@@ -160,8 +160,25 @@ function App() {
   const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
   const collectionId = isCollectionPage ? queryParams.get('id') : null;
 
+  // Calculate transitionKey for page animation
+  const transitionKey = useMemo(() => {
+    if (isDetailPage && animeId) {
+      return `anime-${animeId}`;
+    }
+    if (isCollectionPage && collectionId) {
+      return `collection-${collectionId}`;
+    }
+    return pathname || '/';
+  }, [pathname, animeId, collectionId]);
+
+  // Reset scroll position to top instantly when transitionKey changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [transitionKey]);
+
   return (
     <Layout>
+      <div key={transitionKey} className="animate-page-enter">
       {isDetailPage && animeId ? (
         <AnimeDetailView key={animeId} anilistId={animeId} />
       ) : isLibraryPage ? (
@@ -229,6 +246,7 @@ function App() {
           )}
         </div>
       )}
+      </div>
     </Layout>
   );
 }

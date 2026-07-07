@@ -223,4 +223,23 @@
       transform: scale(1);
     }
   }
+
+  /* Page transitions */
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.995);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-page-enter {
+    animation: pageEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    /* Telling the browser to prepare a separate layer for the GPU */
+    will-change: transform, opacity;
+  }
 }
+
