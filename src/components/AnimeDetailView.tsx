@@ -332,8 +332,246 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     }
   }
 
+  const renderTrackingWidget = () => (
+    <div className="glass-card p-6 flex flex-col gap-5">
+      <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
+        {t('detail.myTracking')}
+      </h3>
+
+      {!user ? (
+        <div className="text-center py-4 flex flex-col gap-3">
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            {t('detail.signInDetails')}
+          </p>
+          <button
+            onClick={signInWithGoogle}
+            className="w-full glass-button flex items-center justify-center gap-2 text-xs py-2"
+          >
+            {t('common.signInGoogle')}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          
+          {/* Watch Status Buttons */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.watchStatus')}</label>
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
+              {STATUS_CONFIGS.map((status) => {
+                const isActive = tracking?.watch_status === status.id;
+                
+                return (
+                  <button
+                    key={status.id}
+                    onClick={async () => {
+                      try {
+                        if (isActive) {
+                            await deleteTracking();
+                        } else {
+                            await updateTracking({ watch_status: status.id });
+                        }
+                      } catch (e) {
+                        console.error('[WatchStatusButton] Update tracking failed:', e);
+                      }
+                    }}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none"
+                    style={{
+                      borderColor: isActive ? status.color : 'var(--color-border-glass)',
+                      backgroundColor: isActive ? `${status.color}25` : 'var(--color-bg-input)',
+                      color: isActive ? status.color : 'var(--color-text-secondary)',
+                      boxShadow: isActive ? `0 0 12px ${status.color}30` : 'none',
+                    }}
+                  >
+                    {isActive ? status.activeIcon : status.inactiveIcon}
+                    <span>{t(`status.${status.id}`)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Episode Progress */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
+              <span>{t('detail.episodeProgress')}</span>
+              <span className="text-[var(--color-text-tertiary)]">
+                {t('detail.maxEpisodes', { count: anime.episodes || '?' })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={!tracking || (tracking.episode_progress || 0) <= 0}
+                onClick={() => updateTracking({ episode_progress: Math.max(0, (tracking?.episode_progress || 0) - 1) })}
+                className="w-10 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-lg flex items-center justify-center hover:bg-[var(--color-bg-card-hover)] cursor-pointer text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                -
+              </button>
+              <div className="flex-1 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] flex items-center justify-center font-bold text-sm text-[var(--color-text-primary)]">
+                {tracking?.episode_progress || 0} / {anime.episodes || '?'}
+              </div>
+              <button
+                disabled={!tracking || (anime.episodes !== null && (tracking.episode_progress || 0) >= anime.episodes)}
+                onClick={() => updateTracking({ episode_progress: (tracking?.episode_progress || 0) + 1 })}
+                className="w-10 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-lg flex items-center justify-center hover:bg-[var(--color-bg-card-hover)] cursor-pointer text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Score Rating out of 10 */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
+              <span>{t('detail.myScore')}</span>
+              <span className="font-bold text-[var(--color-accent-primary)]">
+                {tracking?.score ? `${tracking.score}/10` : t('detail.unrated')}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="1"
+              disabled={!tracking}
+              value={tracking?.score || 0}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                updateTracking({ score: val === 0 ? null : val });
+              }}
+              className="w-full accent-[var(--color-accent-primary)] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            />
+          </div>
+
+          {/* Personal Notes */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
+              <span>{t('detail.privateNotes')}</span>
+              {isSavingNotes && (
+                <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">{t('detail.saving')}</span>
+              )}
+            </div>
+            <textarea
+              disabled={!tracking}
+              value={localNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder={t('detail.notesPlaceholder')}
+              rows={4}
+              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] resize-none disabled:opacity-30 disabled:cursor-not-allowed"
+            />
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+
+  const renderAnimeDetails = () => (
+    <div className="glass-card p-6 flex flex-col gap-4">
+      <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
+        {t('detail.animeDetails')}
+      </h3>
+
+      <div className="flex flex-col gap-3 text-xs">
+        {studios.length > 0 && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.studios')}</h4>
+            <div className="flex gap-2 flex-wrap mt-1">
+              {studios.map((st) => (
+                <button
+                  key={st.studio_id}
+                  onClick={() => filterByStudio(st.studio_id)}
+                  className="px-2.5 py-1 rounded-full bg-[var(--color-accent-secondary)]/10 hover:bg-[var(--color-accent-secondary)]/20 active:scale-95 text-[var(--color-accent-secondary)] font-bold transition-all cursor-pointer text-left"
+                >
+                  {st.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.totalEpisodes')}</h4>
+          <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.episodes || t('detail.unknown')}</p>
+        </div>
+
+        {anime.duration && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.duration')}</h4>
+            <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.duration} {t('detail.minutesPerEp')}</p>
+          </div>
+        )}
+
+        {anime.source && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.originalSource')}</h4>
+            <div className="mt-1">
+              <button
+                onClick={() => filterBySource(anime.source)}
+                className="px-2.5 py-1 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] font-medium transition-all cursor-pointer active:scale-95 text-left"
+              >
+                {t(`sources.${anime.source}`, anime.source.replace(/_/g, ' '))}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {anime.status && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.airingStatus')}</h4>
+            <div className="mt-1">
+              <StatusBadge type="status" value={anime.status} onClick={() => filterByStatus(anime.status)} />
+            </div>
+          </div>
+        )}
+
+        {genres.length > 0 && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.genres')}</h4>
+            <div className="flex gap-1.5 flex-wrap mt-1.5">
+              {genres.map((g) => (
+                <button
+                  key={g.slug}
+                  onClick={() => filterByGenre(g.slug)}
+                  className="px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
+                >
+                  {g.name || g.name_en}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tags.length > 0 && (
+          <div>
+            <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.tags')}</h4>
+            <div className="flex gap-1.5 flex-wrap mt-1.5">
+              {(showAllTags ? tags : tags.slice(0, 15)).map((t) => (
+                <button
+                  key={t.tag_id}
+                  onClick={() => filterByTag(t.tag_id)}
+                  className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
+                  title={t.category || ''}
+                >
+                  {t.name || t.name_en}
+                </button>
+              ))}
+              {!showAllTags && tags.length > 15 && (
+                <button
+                  onClick={() => setShowAllTags(true)}
+                  className="text-[10px] text-[var(--color-accent-primary)] hover:underline self-center cursor-pointer active:scale-95"
+                >
+                  +{tags.length - 15} {t('detail.more')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
+    <div className="flex flex-col gap-8 animate-fade-in pb-16">
       {/* ─── Premium Glassmorphic Header / Banner ───────────────────────────── */}
       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-[var(--color-border-glass)] bg-[var(--color-bg-elevated)] min-h-[300px] md:min-h-[360px] flex flex-col justify-end">
         {/* Banner image with extreme blur / overlay */}
@@ -368,10 +606,10 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
         </div>
 
         {/* Content layout on top of banner */}
-        <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-end gap-6">
+        <div className="relative z-10 p-6 lg:p-8 flex flex-row items-end gap-4 lg:gap-6">
           {/* Main Poster card */}
           {coverUrl && (
-            <div className="w-28 md:w-36 aspect-[3/4] rounded-xl overflow-hidden border border-[var(--color-border-glass-hover)] shadow-2xl flex-shrink-0 bg-[var(--color-bg-base)] group cursor-pointer relative"
+            <div className="flex-shrink-0 w-[120px] lg:w-[200px] aspect-[3/4] rounded-xl overflow-hidden border border-[var(--color-border-glass-hover)] shadow-2xl bg-[var(--color-bg-base)] group cursor-pointer relative"
                  onClick={() => setLightboxIndex(0)}>
               <img
                 src={coverUrl}
@@ -385,7 +623,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           )}
 
           {/* Core Info */}
-          <div className="flex-1 space-y-3">
+          <div className="min-w-0 flex-1 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
               {anime.score_mal && (
                 <div className="flex items-center gap-1 glass-badge bg-[var(--color-bg-overlay)] border-[var(--color-border-glass)]">
@@ -430,12 +668,17 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* LEFT / CENTER: Main Metadata tabs, Synopsis, Gallery, Franchise, recommendations */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 flex flex-col gap-8">
           
+          {/* Mobile-only Tracking Widget */}
+          <div className="lg:hidden">
+            {renderTrackingWidget()}
+          </div>
+
           {/* Synopsis */}
-          <div className="glass-card p-6 space-y-3">
+          <div className="glass-card p-6 flex flex-col gap-3">
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.synopsis')}</h2>
-            <div className="text-sm text-[var(--color-text-secondary)] leading-relaxed space-y-3">
+            <div className="text-sm text-[var(--color-text-secondary)] leading-relaxed flex flex-col gap-3">
               {(() => {
                 const synopsisText = preferUkTitles
                   ? (anime.description_uk || anime.description_en)
@@ -453,6 +696,11 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   .map((p, i) => <p key={i}>{p}</p>);
               })()}
             </div>
+          </div>
+
+          {/* Mobile-only Anime Details */}
+          <div className="lg:hidden">
+            {renderAnimeDetails()}
           </div>
 
           {/* Quick Tab navigation for extra tabs (Relations, Staff, Franchise) */}
@@ -476,10 +724,10 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             <div className="p-6">
               {/* Tab 1: Info (Trailer + Screenshots) */}
               {activeTab === 'info' && (
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                   {/* Screenshots gallery */}
                   {screenshots.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                       <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.screenshots')}</h3>
                       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
                         {screenshots.map((url, idx) => (
@@ -497,7 +745,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
                   {/* Embedded Trailer */}
                   {anime.trailer_id && anime.trailer_site === 'youtube' && (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                       <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.watchTrailer')}</h3>
                       <div className="relative aspect-video rounded-xl overflow-hidden border border-[var(--color-border-glass)] bg-[var(--color-bg-base)]">
                         <iframe
@@ -521,7 +769,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               {/* Tab 2: Relations */}
               {activeTab === 'relations' && (
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                   {relations.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {relations.map((rel) => {
@@ -562,7 +810,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               {/* Tab 3: Staff */}
               {activeTab === 'staff' && (
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4">
                   {staff.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                       {staff.map((st) => (
@@ -594,9 +842,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               {/* Tab 4: Franchise Timeline */}
               {activeTab === 'franchise' && (
-                <div className="space-y-6">
+                <div className="flex flex-col gap-6">
                   {franchise ? (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                       <div className="p-4 rounded-xl border border-[var(--color-accent-primary)]/20 bg-[var(--color-accent-primary)]/5">
                         <h4 className="text-sm font-bold text-[var(--color-accent-primary)]">
                           {franchise.name || franchise.name_en || franchise.name_uk || t('detail.franchise')}
@@ -628,7 +876,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
           {/* Recommendations */}
           {recommendations.length > 0 && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.recommended')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {recommendations.slice(0, 8).map((rec) => {
@@ -655,7 +903,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                           </div>
                         )}
                       </div>
-                      <div className="p-2 space-y-1">
+                      <div className="p-2 flex flex-col gap-1">
                         <h4 className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-1">
                           {rec.displayTitle || rec.title_en || rec.title_romaji}
                         </h4>
@@ -673,244 +921,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
         </div>
 
         {/* RIGHT COLUMN: Tracking Widget & Meta Badges info */}
-        <div className="space-y-6">
-          
-          {/* Tracking Widget */}
-          <div className="glass-card p-6 space-y-5">
-            <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
-              {t('detail.myTracking')}
-            </h3>
-
-            {!user ? (
-              <div className="text-center py-4 space-y-3">
-                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  {t('detail.signInDetails')}
-                </p>
-                <button
-                  onClick={signInWithGoogle}
-                  className="w-full glass-button flex items-center justify-center gap-2 text-xs py-2"
-                >
-                  {t('common.signInGoogle')}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                
-                {/* Watch Status Buttons */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.watchStatus')}</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
-                    {STATUS_CONFIGS.map((status) => {
-                      const isActive = tracking?.watch_status === status.id;
-                      
-                      return (
-                        <button
-                          key={status.id}
-                          onClick={async () => {
-                            try {
-                              if (isActive) {
-                                  await deleteTracking();
-                              } else {
-                                  await updateTracking({ watch_status: status.id });
-                              }
-                            } catch (e) {
-                              console.error('[WatchStatusButton] Update tracking failed:', e);
-                            }
-                          }}
-                          className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none"
-                          style={{
-                            borderColor: isActive ? status.color : 'var(--color-border-glass)',
-                            backgroundColor: isActive ? `${status.color}25` : 'var(--color-bg-input)',
-                            color: isActive ? status.color : 'var(--color-text-secondary)',
-                            boxShadow: isActive ? `0 0 12px ${status.color}30` : 'none',
-                          }}
-                        >
-                          {isActive ? status.activeIcon : status.inactiveIcon}
-                          <span>{t(`status.${status.id}`)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Episode Progress */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>{t('detail.episodeProgress')}</span>
-                    <span className="text-[var(--color-text-tertiary)]">
-                      {t('detail.maxEpisodes', { count: anime.episodes || '?' })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={!tracking || (tracking.episode_progress || 0) <= 0}
-                      onClick={() => updateTracking({ episode_progress: Math.max(0, (tracking?.episode_progress || 0) - 1) })}
-                      className="w-10 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-lg flex items-center justify-center hover:bg-[var(--color-bg-card-hover)] cursor-pointer text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      -
-                    </button>
-                    <div className="flex-1 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] flex items-center justify-center font-bold text-sm text-[var(--color-text-primary)]">
-                      {tracking?.episode_progress || 0} / {anime.episodes || '?'}
-                    </div>
-                    <button
-                      disabled={!tracking || (anime.episodes !== null && (tracking.episode_progress || 0) >= anime.episodes)}
-                      onClick={() => updateTracking({ episode_progress: (tracking?.episode_progress || 0) + 1 })}
-                      className="w-10 h-10 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-lg flex items-center justify-center hover:bg-[var(--color-bg-card-hover)] cursor-pointer text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Score Rating out of 10 */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>{t('detail.myScore')}</span>
-                    <span className="font-bold text-[var(--color-accent-primary)]">
-                      {tracking?.score ? `${tracking.score}/10` : t('detail.unrated')}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    disabled={!tracking}
-                    value={tracking?.score || 0}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      updateTracking({ score: val === 0 ? null : val });
-                    }}
-                    className="w-full accent-[var(--color-accent-primary)] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                {/* Personal Notes */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>{t('detail.privateNotes')}</span>
-                    {isSavingNotes && (
-                      <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">{t('detail.saving')}</span>
-                    )}
-                  </div>
-                  <textarea
-                    disabled={!tracking}
-                    value={localNotes}
-                    onChange={(e) => handleNotesChange(e.target.value)}
-                    placeholder={t('detail.notesPlaceholder')}
-                    rows={4}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] resize-none disabled:opacity-30 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-              </div>
-            )}
-          </div>
-
-          {/* Details / Metadata Info Badges */}
-          <div className="glass-card p-6 space-y-4">
-            <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
-              {t('detail.animeDetails')}
-            </h3>
-
-            <div className="space-y-3 text-xs">
-              {studios.length > 0 && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.studios')}</h4>
-                  <div className="flex gap-2 flex-wrap mt-1">
-                    {studios.map((st) => (
-                      <button
-                        key={st.studio_id}
-                        onClick={() => filterByStudio(st.studio_id)}
-                        className="px-2.5 py-1 rounded-full bg-[var(--color-accent-secondary)]/10 hover:bg-[var(--color-accent-secondary)]/20 active:scale-95 text-[var(--color-accent-secondary)] font-bold transition-all cursor-pointer text-left"
-                      >
-                        {st.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.totalEpisodes')}</h4>
-                <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.episodes || t('detail.unknown')}</p>
-              </div>
-
-              {anime.duration && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.duration')}</h4>
-                  <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.duration} {t('detail.minutesPerEp')}</p>
-                </div>
-              )}
-
-              {anime.source && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.originalSource')}</h4>
-                  <div className="mt-1">
-                    <button
-                      onClick={() => filterBySource(anime.source)}
-                      className="px-2.5 py-1 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] font-medium transition-all cursor-pointer active:scale-95 text-left"
-                    >
-                      {t(`sources.${anime.source}`, anime.source.replace(/_/g, ' '))}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {anime.status && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.airingStatus')}</h4>
-                  <div className="mt-1">
-                    <StatusBadge type="status" value={anime.status} onClick={() => filterByStatus(anime.status)} />
-                  </div>
-                </div>
-              )}
-
-              {genres.length > 0 && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.genres')}</h4>
-                  <div className="flex gap-1.5 flex-wrap mt-1.5">
-                    {genres.map((g) => (
-                      <button
-                        key={g.slug}
-                        onClick={() => filterByGenre(g.slug)}
-                        className="px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
-                      >
-                        {g.name || g.name_en}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {tags.length > 0 && (
-                <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.tags')}</h4>
-                  <div className="flex gap-1.5 flex-wrap mt-1.5">
-                    {(showAllTags ? tags : tags.slice(0, 15)).map((t) => (
-                      <button
-                        key={t.tag_id}
-                        onClick={() => filterByTag(t.tag_id)}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
-                        title={t.category || ''}
-                      >
-                        {t.name || t.name_en}
-                      </button>
-                    ))}
-                    {!showAllTags && tags.length > 15 && (
-                      <button
-                        onClick={() => setShowAllTags(true)}
-                        className="text-[10px] text-[var(--color-accent-primary)] hover:underline self-center cursor-pointer active:scale-95"
-                      >
-                        +{tags.length - 15} {t('detail.more')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
+        <div className="hidden lg:flex lg:flex-col lg:gap-6 w-full">
+          {renderTrackingWidget()}
+          {renderAnimeDetails()}
         </div>
 
       </div>

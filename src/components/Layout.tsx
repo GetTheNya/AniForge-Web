@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDatabase } from '../context/DatabaseContext';
@@ -13,6 +14,23 @@ export default function Layout({ children }: LayoutProps) {
   const { user, profile, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const { pathname, navigate } = useNavigation();
   const { t } = useTranslation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSidebarOpen]);
+
+  const handleNav = (path: string) => {
+    setIsSidebarOpen(false);
+    navigate(path);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -21,7 +39,18 @@ export default function Layout({ children }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Nav */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 lg:gap-6">
+              {/* Hamburger Button */}
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)] border border-transparent hover:border-[var(--color-border-glass)] transition-all cursor-pointer"
+                aria-label="Open menu"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
               <div
                 className="flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate('/')}
@@ -38,8 +67,8 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
               </div>
 
-              {/* Navigation links */}
-              <nav className="flex items-center gap-2">
+              {/* Navigation links (Desktop) */}
+              <nav className="hidden lg:flex items-center gap-2">
                 <button
                   onClick={() => navigate('/')}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
@@ -159,6 +188,113 @@ export default function Layout({ children }: LayoutProps) {
         )}
       </header>
 
+      {/* Sidebar Drawer for Mobile */}
+      <div
+        className={`fixed inset-0 z-[60] transition-opacity duration-300 ${
+          isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Glassmorphic Backdrop Overlay */}
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="absolute inset-0 bg-black/40 backdrop-blur-md"
+        />
+
+        {/* Sidebar Panel */}
+        <aside
+          className={`absolute top-0 left-0 bottom-0 w-72 bg-[var(--color-bg-base)]/95 border-r border-[var(--color-border-glass)] backdrop-blur-2xl p-6 flex flex-col gap-6 shadow-2xl transition-transform duration-300 ease-out ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border-glass)]">
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => {
+                setIsSidebarOpen(false);
+                navigate('/');
+              }}
+            >
+              <img
+                src="/favicon.svg"
+                alt="AniForge Web Logo"
+                className="w-8 h-8 rounded-lg object-contain shadow-lg"
+              />
+              <span className="text-md font-bold text-white">AniForge Web</span>
+            </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)] border border-transparent hover:border-[var(--color-border-glass)] transition-all cursor-pointer"
+              aria-label="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Sidebar Navigation */}
+          <nav className="flex flex-col gap-2 flex-1">
+            <button
+              onClick={() => handleNav('/')}
+              className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                pathname === '/' || pathname === '/anime'
+                  ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]/30 border border-transparent'
+              }`}
+            >
+              {t('nav.catalog')}
+            </button>
+            <button
+              onClick={() => handleNav('/library')}
+              className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer ${
+                pathname === '/library' || pathname === '/collection'
+                  ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]/30 border border-transparent'
+              }`}
+            >
+              {t('nav.library')}
+            </button>
+            <button
+              onClick={() => handleNav('/settings')}
+              className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                pathname === '/settings'
+                  ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]/30 border border-transparent'
+              }`}
+            >
+              <span>⚙️</span>
+              <span>{t('nav.settings')}</span>
+            </button>
+            <button
+              onClick={() => handleNav('/android')}
+              className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                pathname === '/android'
+                  ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]/30 border border-transparent'
+              }`}
+            >
+              <span className="text-[14px]">🤖</span>
+              <span>{t('nav.androidApp')}</span>
+            </button>
+          </nav>
+
+          {/* Database status for mobile (inside sidebar) */}
+          <div className="pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-2">
+            <div className="text-[var(--color-text-secondary)] text-xs font-semibold px-1">
+              {t('common.status')}
+            </div>
+            <DatabaseStatusPill
+              status={status}
+              version={version}
+              recordCount={recordCount}
+              progress={progress}
+              className="flex items-center gap-2 text-xs"
+            />
+          </div>
+        </aside>
+      </div>
+
       {/* Main content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         {children}
@@ -186,11 +322,13 @@ function DatabaseStatusPill({
   version,
   recordCount,
   progress,
+  className = "hidden sm:flex items-center gap-2 text-xs",
 }: {
   status: string;
   version: number | null;
   recordCount: number | null;
   progress: number;
+  className?: string;
 }) {
   const { t } = useTranslation();
 
@@ -210,7 +348,7 @@ function DatabaseStatusPill({
   const cfg = statusConfig[status] || statusConfig.idle;
 
   return (
-    <div className="hidden sm:flex items-center gap-2 text-xs">
+    <div className={className}>
       <div className={`w-2 h-2 rounded-full ${status === 'ready' ? 'bg-[var(--color-status-releasing)]' : status === 'error' ? 'bg-[var(--color-status-cancelled)]' : 'bg-[var(--color-status-upcoming)] animate-pulse'}`} />
       <span className={`font-medium ${cfg.color}`}>{cfg.label}</span>
       {version !== null && (

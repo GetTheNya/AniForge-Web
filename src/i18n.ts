@@ -60,7 +60,7 @@ const resources = {
         ukrainian: "Ukrainian"
       },
       catalog: {
-        searchPlaceholder: "Search anime by title, description, or ID...",
+        searchPlaceholder: "Search...",
         startSearching: "Start searching to explore the catalog",
         noResults: "No anime found matching your search",
         connectionError: "Connection Error",
@@ -163,7 +163,8 @@ const resources = {
       common: {
         signOut: "Sign Out",
         signInGoogle: "Sign in with Google",
-        poweredBy: "Powered by SQLite WASM + Supabase"
+        poweredBy: "Powered by SQLite WASM + Supabase",
+        status: "Database status:"
       },
       filter: {
         title: "Filters",
@@ -302,7 +303,7 @@ const resources = {
         ukrainian: "Українська"
       },
       catalog: {
-        searchPlaceholder: "Шукайте аніме за назвою, описом, або ID...",
+        searchPlaceholder: "Пошук...",
         startSearching: "Почніть пошук, щоб дослідити каталог",
         noResults: "Не знайдено аніме за вашим запитом",
         connectionError: "Помилка з'єднання",
@@ -405,7 +406,8 @@ const resources = {
       common: {
         signOut: "Вийти",
         signInGoogle: "Увійти через Google",
-        poweredBy: "Працює на SQLite WASM + Supabase"
+        poweredBy: "Працює на SQLite WASM + Supabase",
+        status: "Стан бази даних:"
       },
       filter: {
         title: "Фільтри",
