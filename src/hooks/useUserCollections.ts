@@ -1,9 +1,14 @@
 import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { userDb } from '../services/userDb';
+import { userDb, type CollectionAnimeCrossRefRecord } from '../services/userDb';
 import { useDatabase } from '../context/DatabaseContext';
 import { useSettings } from '../context/SettingsContext';
 import { rowToAnime, type Anime } from '../types/anime';
+
+export interface CollectionAnimeItem {
+  crossRef: CollectionAnimeCrossRefRecord;
+  anime: Anime | null;
+}
 
 /**
  * Hook to reactively observe custom collections from IndexedDB.
@@ -50,9 +55,13 @@ export function useCollectionAnime(collectionId: string | null) {
   );
 
   // 2. Hybrid batch join with local SQLite WASM catalog
-  const animeList = useMemo<Anime[]>(() => {
-    if (!db || status !== 'ready' || !crossRefs || crossRefs.length === 0) {
+  const items = useMemo<CollectionAnimeItem[]>(() => {
+    if (!crossRefs || crossRefs.length === 0) {
       return [];
+    }
+
+    if (!db || status !== 'ready') {
+      return crossRefs.map((ref) => ({ crossRef: ref, anime: null }));
     }
 
     try {
@@ -71,17 +80,18 @@ export function useCollectionAnime(collectionId: string | null) {
       }
 
       // Re-map to match the collection's sorted orderIndex
-      return crossRefs
-        .map((ref) => animeMap.get(ref.animeId))
-        .filter((anime): anime is Anime => !!anime);
+      return crossRefs.map((ref) => ({
+        crossRef: ref,
+        anime: animeMap.get(ref.animeId) ?? null,
+      }));
     } catch (e) {
       console.error('[useCollectionAnime] Error during hybrid join query:', e);
-      return [];
+      return crossRefs.map((ref) => ({ crossRef: ref, anime: null }));
     }
   }, [db, status, crossRefs, queryObjects, getAnimeTitle]);
 
   return {
-    animeList,
+    items,
     isLoading: crossRefs === undefined,
   };
 }

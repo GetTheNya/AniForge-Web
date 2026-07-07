@@ -205,7 +205,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
       // 1. User tracking delta sync
       const syncTimeKey = getSyncTimeKey(user.id);
       const dbCount = await userDb.user_tracking.count();
-      const lastSyncTime = dbCount > 0 ? (localStorage.getItem(syncTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
+      const lastSyncTime = dbCount > 0 ? (localStorage.getItem(syncTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
       const syncStartTime = new Date().toISOString();
 
       let page = 0;
@@ -273,7 +273,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
       // 2. Collections delta sync
       const collectionsTimeKey = `collections_last_synced_${user.id}`;
       const collectionsDbCount = await userDb.collections.count();
-      const collectionsLastSync = collectionsDbCount > 0 ? (localStorage.getItem(collectionsTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
+      const collectionsLastSync = collectionsDbCount > 0 ? (localStorage.getItem(collectionsTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
 
       let colsPage = 0;
       let colsHasMore = true;
@@ -347,7 +347,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
       // 3. Cross-refs delta sync
       const crossRefsTimeKey = `cross_ref_last_synced_${user.id}`;
       const crossRefsDbCount = await userDb.collection_anime_cross_ref.count();
-      const crossRefsLastSync = crossRefsDbCount > 0 ? (localStorage.getItem(crossRefsTimeKey) || '1970-01-01T00:00:00Z') : '1970-01-01T00:00:00Z';
+      const crossRefsLastSync = crossRefsDbCount > 0 ? (localStorage.getItem(crossRefsTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
 
       let refsPage = 0;
       let refsHasMore = true;

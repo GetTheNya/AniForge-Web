@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '../hooks/useNavigation';
 import { useUserTracking } from '../context/UserTrackingContext';
 import { useCollectionAnime } from '../hooks/useUserCollections';
@@ -11,6 +12,7 @@ interface CollectionDetailsViewProps {
 
 export default function CollectionDetailsView({ collectionId }: CollectionDetailsViewProps) {
   const { navigate } = useNavigation();
+  const { t } = useTranslation();
   const { removeCollection, removeAnimeFromCollection, reorderAnimeInCollection } = useUserTracking();
 
   // 1. Reactive query to fetch collection details from Dexie
@@ -25,23 +27,23 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
   );
 
   // 2. Fetch list of anime in this collection reactively (runs WASM SQLite batch join internally)
-  const { animeList, isLoading } = useCollectionAnime(collectionId);
+  const { items, isLoading } = useCollectionAnime(collectionId);
 
   // Handle reordering sequence
   const moveAnime = async (currentIndex: number, direction: 'left' | 'right') => {
-    if (!collectionId || !animeList) return;
+    if (!collectionId || !items) return;
     
     const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= animeList.length) return;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
 
     // Swap sequence in memory
-    const reorderedList = [...animeList];
+    const reorderedList = [...items];
     const temp = reorderedList[currentIndex];
     reorderedList[currentIndex] = reorderedList[targetIndex];
     reorderedList[targetIndex] = temp;
 
     // Persist new layout order index to write-through db
-    const orderedIds = reorderedList.map((a) => a.anilist_id);
+    const orderedIds = reorderedList.map((item) => item.crossRef.animeId);
     await reorderAnimeInCollection(collectionId, orderedIds);
   };
 
@@ -115,7 +117,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             {collection.description || 'No description provided.'}
           </p>
           <div className="text-[10px] text-[var(--color-text-tertiary)] pt-1">
-            Created: {new Date(collection.createdAt).toLocaleDateString()} • Items: {animeList.length}
+            Created: {new Date(collection.createdAt).toLocaleDateString()} • Items: {items.length}
           </div>
         </div>
 
@@ -134,10 +136,10 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             <div key={i} className="aspect-[3/4] rounded-2xl skeleton" />
           ))}
         </div>
-      ) : animeList.length > 0 ? (
+      ) : items.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {animeList.map((anime, i) => (
-            <div key={anime.anilist_id} className="relative group/item overflow-hidden rounded-2xl">
+          {items.map((item, i) => (
+            <div key={item.crossRef.animeId} className="relative group/item overflow-hidden rounded-2xl">
               {/* Overlay controls for reordering and deletion on hover */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/75 to-transparent p-2.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-20 flex flex-col gap-1.5">
                 <div className="flex justify-between gap-1">
@@ -157,7 +159,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                       e.stopPropagation();
                       moveAnime(i, 'right');
                     }}
-                    disabled={i === animeList.length - 1}
+                    disabled={i === items.length - 1}
                     className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
                     title="Move Right"
                   >
@@ -168,7 +170,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeAnimeFromCollection(collectionId, anime.anilist_id);
+                    removeAnimeFromCollection(collectionId, item.crossRef.animeId);
                   }}
                   className="w-full bg-[var(--color-accent-rose)]/15 border border-[var(--color-accent-rose)]/25 text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)] rounded-lg py-1 cursor-pointer text-[10px] font-black transition-all"
                   title="Remove from collection"
@@ -177,8 +179,16 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                 </button>
               </div>
 
-              {/* Underlying standard AnimeCard */}
-              <AnimeCard anime={anime} index={i} />
+              {/* Underlying standard AnimeCard or placeholder card */}
+              {item.anime ? (
+                <AnimeCard anime={item.anime} index={i} />
+              ) : (
+                <div className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
+                  <span className="text-2xl">❔</span>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.crossRef.animeId}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
