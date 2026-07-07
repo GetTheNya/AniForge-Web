@@ -246,12 +246,12 @@ const resources = {
         completed: "Завершено",
         planning: "У планах",
         onHold: "Призупинено",
-        dropped: "Покинуто",
+        dropped: "Закинуто",
         CURRENT: "Дивлюсь",
         COMPLETED: "Завершено",
         PLANNING: "У планах",
         PAUSED: "Призупинено",
-        DROPPED: "Покинуто"
+        DROPPED: "Закинуто"
       },
       season: {
         winter: "Зима",
@@ -428,16 +428,16 @@ const resources = {
         GREATER_THAN_24: "> 24 серій"
       },
       formats: {
-        TV: "ТБ",
-        TV_SHORT: "Короткометражне",
+        TV: "ТВ",
+        TV_SHORT: "Міні-ТВ",
         MOVIE: "Фільм",
         SPECIAL: "Спешл",
         OVA: "OVA",
         ONA: "ONA",
         MUSIC: "Кліп",
         MANGA: "Манґа",
-        NOVEL: "Новела",
-        ONE_SHOT: "Ван-шот"
+        NOVEL: "Ранобе",
+        ONE_SHOT: "Ваншот"
       },
       airingStatus: {
         FINISHED: "Завершено",

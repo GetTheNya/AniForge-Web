@@ -1,6 +1,4 @@
-/**
- * StatusBadge — colored badges for anime format and media status.
- */
+import { useTranslation } from 'react-i18next';
 
 interface StatusBadgeProps {
   type: 'status' | 'format';
@@ -48,10 +46,15 @@ const FORMAT_LABELS: Record<string, string> = {
 };
 
 export default function StatusBadge({ type, value, onClick }: StatusBadgeProps) {
+  const { t } = useTranslation();
   const colorMap = type === 'status' ? STATUS_COLORS : FORMAT_COLORS;
   const labelMap = type === 'status' ? STATUS_LABELS : FORMAT_LABELS;
   const colors = colorMap[value] || 'bg-gray-500/15 text-gray-400 border-gray-500/20';
-  const label = labelMap[value] || value.replace(/_/g, ' ');
+  
+  const label = type === 'status'
+    ? t(`airingStatus.${value}`, labelMap[value] || value.replace(/_/g, ' '))
+    : t(`formats.${value}`, labelMap[value] || value.replace(/_/g, ' '));
+    
   const baseClass = `glass-badge ${colors}`;
 
   if (onClick) {

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +35,27 @@ export default function LibraryView() {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal transition states
+  const [collectionModalRendered, setCollectionModalRendered] = useState(false);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+
+  // Sync transitions for modal portal
+  useEffect(() => {
+    if (showModal) {
+      setCollectionModalRendered(true);
+      const timer = setTimeout(() => {
+        setCollectionModalVisible(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setCollectionModalVisible(false);
+      const timer = setTimeout(() => {
+        setCollectionModalRendered(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showModal]);
 
   // Group tracking by watch status
   const filteredTracking = useMemo(() => {
@@ -227,9 +249,19 @@ export default function LibraryView() {
       )}
 
       {/* Sleek Create Collection Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-md p-6 space-y-4 animate-scale-in">
+      {collectionModalRendered && createPortal(
+        <div className={`fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${
+          collectionModalVisible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
+        }`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowModal(false);
+            }
+          }}
+        >
+          <div className={`glass-card w-full max-w-md p-6 space-y-4 max-h-[85vh] overflow-y-auto transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            collectionModalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
             <div className="flex justify-between items-center border-b border-[var(--color-border-glass)] pb-2">
               <h3 className="text-base font-bold text-[var(--color-text-primary)]">{t('library.newCollection')}</h3>
               <button
@@ -282,7 +314,8 @@ export default function LibraryView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

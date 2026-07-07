@@ -47,6 +47,52 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'relations' | 'staff' | 'franchise'>('info');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showAllTags, setShowAllTags] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+
+  // Transition states for Lightbox Portal
+  const [lightboxRendered, setLightboxRendered] = useState(false);
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+
+  // Transition states for Collection Modal Portal
+  const [collectionModalRendered, setCollectionModalRendered] = useState(false);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+
+  // Sync transitions for lightbox
+  useEffect(() => {
+    if (lightboxIndex !== null) {
+      setActiveLightboxIndex(lightboxIndex);
+      setLightboxRendered(true);
+      const timer = setTimeout(() => {
+        setLightboxVisible(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setLightboxVisible(false);
+      const timer = setTimeout(() => {
+        setLightboxRendered(false);
+        setActiveLightboxIndex(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [lightboxIndex]);
+
+  // Sync transitions for collection modal
+  useEffect(() => {
+    if (showCollectionModal) {
+      setCollectionModalRendered(true);
+      const timer = setTimeout(() => {
+        setCollectionModalVisible(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setCollectionModalVisible(false);
+      const timer = setTimeout(() => {
+        setCollectionModalRendered(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showCollectionModal]);
 
   const navigateToFilterAndScroll = (query: any) => {
     const params = filterToSearchParams(query);
@@ -124,7 +170,6 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     [anilistId]
   ) || [];
 
-  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [newCollectionDesc, setNewCollectionDesc] = useState('');
   const [showCreateCollection, setShowCreateCollection] = useState(false);
@@ -871,8 +916,10 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       </div>
 
       {/* ─── Lightbox Modal for screenshots ─────────────────────────────────── */}
-      {lightboxIndex !== null && createPortal(
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+      {lightboxRendered && activeLightboxIndex !== null && createPortal(
+        <div className={`fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${
+          lightboxVisible ? 'opacity-100 backdrop-blur-md' : 'opacity-0 backdrop-blur-none'
+        }`}
           onClick={(e) => checkIfParent(e, () => setLightboxIndex(null))}
         >
           <button
@@ -883,7 +930,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           </button>
           
           <button
-            disabled={lightboxIndex === 0}
+            disabled={activeLightboxIndex === 0}
             onClick={() => setLightboxIndex((p) => p! - 1)}
             className="group absolute left-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-center text-white text-5xl font-light hover:bg-white/5 transition-all duration-200 disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed z-40"
           >
@@ -892,16 +939,18 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             </span>
           </button>
 
-          <div className="max-w-5xl max-h-[80vh] flex items-center justify-center z-10">
+          <div className={`max-w-5xl max-h-[80vh] flex items-center justify-center z-10 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            lightboxVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
             <img
-              src={lightboxIndex === 0 && coverUrl ? coverUrl : screenshots[lightboxIndex - (coverUrl ? 1 : 0)]}
+              src={activeLightboxIndex === 0 && coverUrl ? coverUrl : screenshots[activeLightboxIndex - (coverUrl ? 1 : 0)]}
               alt=""
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border border-white/10"
             />
           </div>
 
           <button
-            disabled={lightboxIndex === (screenshots.length - 1 + (coverUrl ? 1 : 0))}
+            disabled={activeLightboxIndex === (screenshots.length - 1 + (coverUrl ? 1 : 0))}
             onClick={() => setLightboxIndex((p) => p! + 1)}
             className="group absolute right-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-center text-white text-5xl font-light hover:bg-white/5 transition-all duration-200 disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed z-40"
           >
@@ -914,14 +963,18 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       )}
 
       {/* ─── Collection Management Modal ────────────────────────────────────── */}
-      {showCollectionModal && createPortal(
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      {collectionModalRendered && createPortal(
+        <div className={`fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${
+          collectionModalVisible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
+        }`}
           onClick={(e) => checkIfParent(e, () => {
             setShowCollectionModal(false);
             setShowCreateCollection(false);
           })}
         >
-          <div className="glass-card w-full max-w-md p-6 space-y-4 animate-scale-in max-h-[85vh] overflow-y-auto">
+          <div className={`glass-card w-full max-w-md p-6 space-y-4 max-h-[85vh] overflow-y-auto transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            collectionModalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
             <div className="flex justify-between items-center border-b border-[var(--color-border-glass)] pb-2">
               <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.addToCollection')}</h3>
               <button
