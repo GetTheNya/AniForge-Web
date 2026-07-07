@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useUserTracking } from '../context/UserTrackingContext';
 import { useSupabaseLists } from '../hooks/useSupabaseLists';
@@ -8,10 +9,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { useDatabase } from '../context/DatabaseContext';
 import AnimeCard from './AnimeCard';
+import { STATUS_COLORS_BG } from '../utils/statusConfig';
 
 export default function LibraryView() {
   const { user, signInWithGoogle } = useAuth();
   const { navigate } = useNavigation();
+  const { t } = useTranslation();
   const { saveCollection } = useUserTracking();
 
   // Tab state: 'lists' (My Lists) or 'collections' (Custom Collections)
@@ -64,16 +67,16 @@ export default function LibraryView() {
           🔒
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Sync & Personalize Your Library</h2>
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('library.syncTitle')}</h2>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
-            Sign in with Google to create custom anime collections, track your watching progress, and sync everything offline.
+            {t('library.syncSubtext')}
           </p>
         </div>
         <button
           onClick={signInWithGoogle}
           className="flex items-center gap-2 glass-button text-sm cursor-pointer"
         >
-          Sign in with Google
+          {t('common.signInGoogle')}
         </button>
       </div>
     );
@@ -84,9 +87,9 @@ export default function LibraryView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-border-glass)] pb-5">
         <div>
-          <h2 className="text-2xl font-black text-[var(--color-text-primary)]">My Library</h2>
+          <h2 className="text-2xl font-black text-[var(--color-text-primary)]">{t('library.title')}</h2>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-            Manage your anime lists and custom offline-first compilations.
+            {t('library.subtext')}
           </p>
         </div>
 
@@ -100,7 +103,7 @@ export default function LibraryView() {
                 : 'text-[var(--color-text-secondary)] hover:text-white'
             }`}
           >
-            My Lists
+            {t('library.myLists')}
           </button>
           <button
             onClick={() => setActiveTab('collections')}
@@ -110,7 +113,7 @@ export default function LibraryView() {
                 : 'text-[var(--color-text-secondary)] hover:text-white'
             }`}
           >
-            Custom Collections
+            {t('library.customCollections')}
           </button>
         </div>
       </div>
@@ -121,11 +124,11 @@ export default function LibraryView() {
           {/* Lists Subtabs */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
             {[
-              { status: 'CURRENT', label: 'Watching', color: 'bg-[var(--color-status-releasing)]' },
-              { status: 'COMPLETED', label: 'Completed', color: 'bg-[var(--color-status-finished)]' },
-              { status: 'PLANNING', label: 'Planning', color: 'bg-[var(--color-status-upcoming)]' },
-              { status: 'PAUSED', label: 'Paused', color: 'bg-[var(--color-status-hiatus)]' },
-              { status: 'DROPPED', label: 'Dropped', color: 'bg-[var(--color-status-cancelled)]' },
+              { status: 'PLANNING', label: t('status.PLANNING'), color: STATUS_COLORS_BG.PLANNING },
+              { status: 'CURRENT', label: t('status.CURRENT'), color: STATUS_COLORS_BG.CURRENT },
+              { status: 'COMPLETED', label: t('status.COMPLETED'), color: STATUS_COLORS_BG.COMPLETED },
+              { status: 'PAUSED', label: t('status.PAUSED'), color: STATUS_COLORS_BG.PAUSED },
+              { status: 'DROPPED', label: t('status.DROPPED'), color: STATUS_COLORS_BG.DROPPED },
             ].map((tab) => {
               const count = trackingList.filter((item) => item.tracking.watch_status === tab.status).length;
               return (
@@ -163,7 +166,7 @@ export default function LibraryView() {
                 ) : (
                   <div key={item.tracking.anilist_id} className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
                     <span className="text-2xl">❔</span>
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-2">Anime Not in Catalog</p>
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
                     <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.tracking.anilist_id}</p>
                   </div>
                 )
@@ -172,12 +175,12 @@ export default function LibraryView() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
               <span className="text-3xl opacity-30">📚</span>
-              <p className="text-sm text-[var(--color-text-secondary)]">No anime tracked in this status list yet.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('library.noTrackedAnime')}</p>
               <button
                 onClick={() => navigate('/')}
                 className="text-xs text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
               >
-                Go to Catalog to add some!
+                {t('library.goToCatalog')}
               </button>
             </div>
           )}
@@ -186,12 +189,12 @@ export default function LibraryView() {
         <div className="space-y-6">
           {/* Create Button Container */}
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold text-[var(--color-text-secondary)]">My Custom Collections</h3>
+            <h3 className="text-sm font-bold text-[var(--color-text-secondary)]">{t('library.myCollections')}</h3>
             <button
               onClick={() => setShowModal(true)}
               className="glass-badge hover:bg-[var(--color-bg-card-hover)] border-[var(--color-border-glass)] text-[var(--color-accent-secondary)] hover:text-white cursor-pointer py-1.5 px-3 rounded-xl font-bold text-xs"
             >
-              + Create Collection
+              {t('library.createCollection')}
             </button>
           </div>
 
@@ -211,12 +214,12 @@ export default function LibraryView() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
               <span className="text-3xl opacity-30">📂</span>
-              <p className="text-sm text-[var(--color-text-secondary)]">You haven't created any custom collections yet.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('library.noCustomCollections')}</p>
               <button
                 onClick={() => setShowModal(true)}
                 className="text-xs text-[var(--color-accent-secondary)] hover:underline cursor-pointer font-bold"
               >
-                Create your first collection
+                {t('library.createFirstCollection')}
               </button>
             </div>
           )}
@@ -228,7 +231,7 @@ export default function LibraryView() {
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-card w-full max-w-md p-6 space-y-4 animate-scale-in">
             <div className="flex justify-between items-center border-b border-[var(--color-border-glass)] pb-2">
-              <h3 className="text-base font-bold text-[var(--color-text-primary)]">New Collection</h3>
+              <h3 className="text-base font-bold text-[var(--color-text-primary)]">{t('library.newCollection')}</h3>
               <button
                 onClick={() => setShowModal(false)}
                 className="text-[var(--color-text-secondary)] hover:text-white text-lg cursor-pointer"
@@ -239,23 +242,23 @@ export default function LibraryView() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Title</label>
+                <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('library.titleLabel')}</label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="E.g., Masterpieces, Plan to Watch Next"
+                  placeholder={t('library.placeholderTitle')}
                   className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Description (Optional)</label>
+                <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('library.descriptionOpt')}</label>
                 <textarea
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="E.g., Anime series that left a deep impact on me."
+                  placeholder={t('library.placeholderDesc')}
                   rows={3}
                   className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] resize-none"
                 />
@@ -267,14 +270,14 @@ export default function LibraryView() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-2 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] cursor-pointer"
                 >
-                  Cancel
+                  {t('library.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newTitle.trim()}
                   className="flex-1 py-2 rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] text-xs text-white font-bold hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-lg"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create'}
+                  {isSubmitting ? t('library.creating') : t('library.create')}
                 </button>
               </div>
             </form>
@@ -298,6 +301,7 @@ interface CollectionCardProps {
 function CollectionCard({ collection }: CollectionCardProps) {
   const { navigate } = useNavigation();
   const { db, status, queryObjects } = useDatabase();
+  const { t } = useTranslation();
 
   // Get active cross refs for this collection
   const crossRefs = useLiveQuery(
@@ -351,7 +355,7 @@ function CollectionCard({ collection }: CollectionCardProps) {
           </span>
         </div>
         <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-          {collection.description || 'No description provided.'}
+          {collection.description || t('library.noDescription')}
         </p>
       </div>
 
@@ -371,13 +375,13 @@ function CollectionCard({ collection }: CollectionCardProps) {
             ))
           ) : (
             <div className="w-8 h-11 rounded-md border border-dashed border-[var(--color-border-glass)] flex items-center justify-center text-xs opacity-35 bg-[var(--color-bg-input)]">
-              Empty
+              {t('library.empty')}
             </div>
           )}
         </div>
 
         <span className="text-[10px] text-[var(--color-accent-secondary)] font-bold tracking-wider uppercase opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-          View details →
+          {t('library.viewDetails')}
         </span>
       </div>
     </div>

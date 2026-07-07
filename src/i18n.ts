@@ -22,6 +22,16 @@ const resources = {
         PAUSED: "On Hold",
         DROPPED: "Dropped"
       },
+      season: {
+        winter: "Winter",
+        spring: "Spring",
+        summer: "Summer",
+        fall: "Fall",
+        WINTER: "Winter",
+        SPRING: "Spring",
+        SUMMER: "Summer",
+        FALL: "Fall"
+      },
       dbStatus: {
         idle: "Idle",
         loading: "Loading...",
@@ -40,13 +50,14 @@ const resources = {
         ukrainian: "Ukrainian"
       },
       catalog: {
-        searchPlaceholder: "Search anime...",
+        searchPlaceholder: "Search anime by title, description, or ID...",
         startSearching: "Start searching to explore the catalog",
         noResults: "No anime found matching your search",
         connectionError: "Connection Error",
         retry: "Retry",
         initializing: "Initializing AniForge",
-        downloadingCatalog: "Downloading Anime Catalog"
+        downloadingCatalog: "Downloading Anime Catalog",
+        results:"results"
       },
       detail: {
         info: "Info",
@@ -94,7 +105,21 @@ const resources = {
         unrated: "Unrated",
         more: "more",
         viewPoster: "View Poster",
-        signInDetails: "Sign in with Google to synchronize your watchlists, track episode progress, rate titles, and write personal diaries."
+        signInDetails: "Sign in with Google to synchronize your watchlists, track episode progress, rate titles, and write personal diaries.",
+        airingSoon: "Airing soon!",
+        airingEp: "Ep. {{episode}} airs in",
+        daysShort: "d",
+        hoursShort: "h",
+        minutesShort: "m",
+        secondsShort: "s",
+        couldNotRetrieve: "Could not retrieve catalog data for this anime.",
+        screenshots: "Screenshots",
+        trailerTitle: "{{title}} Trailer",
+        yearUnknown: "Year ?",
+        maxEpisodes: "max: {{count}}",
+        saving: "Saving...",
+        unknown: "Unknown",
+        namePlaceholder: "E.g., Summer Favorites"
       },
       library: {
         title: "My Library",
@@ -102,12 +127,108 @@ const resources = {
         myLists: "My Lists",
         customCollections: "Custom Collections",
         syncTitle: "Sync & Personalize Your Library",
-        syncSubtext: "Sign in with Google to create custom anime collections, track your watching progress, and sync everything offline."
+        syncSubtext: "Sign in with Google to create custom anime collections, track your watching progress, and sync everything offline.",
+        notInCatalog: "Anime Not in Catalog",
+        noTrackedAnime: "No anime tracked in this status list yet.",
+        goToCatalog: "Go to Catalog to add some!",
+        myCollections: "My Collections",
+        createCollection: "Create New Collection",
+        noCustomCollections: "You haven't created any custom collections yet.",
+        createFirstCollection: "Create your first collection",
+        newCollection: "New Collection",
+        titleLabel: "Title",
+        descriptionOpt: "Description (Optional)",
+        placeholderTitle: "E.g., Masterpieces, Plan to Watch Next",
+        placeholderDesc: "E.g., Anime series that left a deep impact on me.",
+        cancel: "Cancel",
+        create: "Create",
+        creating: "Creating...",
+        noDescription: "No description provided.",
+        empty: "Empty",
+        viewDetails: "View details →"
       },
       common: {
         signOut: "Sign Out",
         signInGoogle: "Sign in with Google",
         poweredBy: "Powered by SQLite WASM + Supabase"
+      },
+      filter: {
+        title: "Filters",
+        sortBy: "Sort By",
+        format: "Format",
+        status: "Status",
+        episodes: "Episodes",
+        scoreRange: "Score Range",
+        minScore: "Min",
+        maxScore: "Max",
+        toScore: "to",
+        source: "Source",
+        genres: "Genres ({{count}})",
+        searchGenres: "Search genres...",
+        tags: "Tags ({{count}})",
+        searchTags: "Search tags...",
+        studios: "Studios ({{count}})",
+        searchStudios: "Search studios...",
+        language: "Language",
+        hasUkTranslation: "Has Ukrainian translation",
+        clearAll: "Clear All Filters"
+      },
+      sortOptions: {
+        SCORE: "Score ↓",
+        SCORE_ASC: "Score ↑",
+        POPULARITY: "Popularity ↓",
+        POPULARITY_ASC: "Popularity ↑",
+        YEAR_DESC: "Year ↓",
+        YEAR_ASC: "Year ↑",
+        TITLE: "Title A→Z",
+        TITLE_DESC: "Title Z→A",
+        RELEVANCE: "Relevance",
+        START_DATE_DESC: "Start Date ↓",
+        START_DATE_ASC: "Start Date ↑",
+        EPISODES_DESC: "Episodes ↓",
+        EPISODES_ASC: "Episodes ↑"
+      },
+      episodeGroups: {
+        LESS_THAN_12: "< 12 eps",
+        BETWEEN_12_AND_18: "12–18 eps",
+        BETWEEN_19_AND_24: "19–24 eps",
+        GREATER_THAN_24: "> 24 eps"
+      },
+      formats: {
+        TV: "TV",
+        TV_SHORT: "Short",
+        MOVIE: "Movie",
+        SPECIAL: "Special",
+        OVA: "OVA",
+        ONA: "ONA",
+        MUSIC: "Music",
+        MANGA: "Manga",
+        NOVEL: "Novel",
+        ONE_SHOT: "One Shot"
+      },
+      airingStatus: {
+        FINISHED: "Finished",
+        RELEASING: "Airing",
+        NOT_YET_RELEASED: "Upcoming",
+        CANCELLED: "Cancelled",
+        HIATUS: "Hiatus"
+      },
+      sources: {
+        ORIGINAL: "Original",
+        MANGA: "Manga",
+        LIGHT_NOVEL: "Light Novel",
+        VISUAL_NOVEL: "Visual Novel",
+        VIDEO_GAME: "Video Game",
+        OTHER: "Other",
+        NOVEL: "Novel",
+        DOUJINSHI: "Doujinshi",
+        ANIME: "Anime",
+        WEB_NOVEL: "Web Novel",
+        LIVE_ACTION: "Live Action",
+        GAME: "Game",
+        COMIC: "Comic",
+        MULTIMEDIA_PROJECT: "Multimedia Project",
+        PICTURE_BOOK: "Picture Book"
       }
     }
   },
@@ -130,6 +251,16 @@ const resources = {
         PAUSED: "Призупинено",
         DROPPED: "Покинуто"
       },
+      season: {
+        winter: "Зима",
+        spring: "Весна",
+        summer: "Літо",
+        fall: "Осінь",
+        WINTER: "Зима",
+        SPRING: "Весна",
+        SUMMER: "Літо",
+        FALL: "Осінь"
+      },
       dbStatus: {
         idle: "В очікуванні",
         loading: "Завантаження...",
@@ -148,13 +279,14 @@ const resources = {
         ukrainian: "Українська"
       },
       catalog: {
-        searchPlaceholder: "Пошук аніме...",
+        searchPlaceholder: "Шукайте аніме за назвою, описом, або ID...",
         startSearching: "Почніть пошук, щоб дослідити каталог",
         noResults: "Не знайдено аніме за вашим запитом",
         connectionError: "Помилка з'єднання",
         retry: "Повторити",
         initializing: "Ініціалізація AniForge",
-        downloadingCatalog: "Завантаження каталогу аніме"
+        downloadingCatalog: "Завантаження каталогу аніме",
+        results:"результатів"
       },
       detail: {
         info: "Інфо",
@@ -202,7 +334,21 @@ const resources = {
         unrated: "Без оцінки",
         more: "більше",
         viewPoster: "Дивитися постер",
-        signInDetails: "Увійдіть за допомогою Google, щоб синхронізувати свої списки, відстежувати прогрес епізодів, оцінювати та вести особистий щоденник."
+        signInDetails: "Увійдіть за допомогою Google, щоб синхронізувати свої списки, відстежувати прогрес епізодів, оцінювати та вести особистий щоденник.",
+        airingSoon: "Незабаром в ефірі!",
+        airingEp: "Серія {{episode}} вийде через",
+        daysShort: "д",
+        hoursShort: "г",
+        minutesShort: "хв",
+        secondsShort: "с",
+        couldNotRetrieve: "Не вдалося отримати дані каталогу для цього аніме.",
+        screenshots: "Скріншоти",
+        trailerTitle: "Трейлер {{title}}",
+        yearUnknown: "Рік ?",
+        maxEpisodes: "макс: {{count}}",
+        saving: "Збереження...",
+        unknown: "Невідомо",
+        namePlaceholder: "Наприклад: Улюблене літо"
       },
       library: {
         title: "Моя бібліотека",
@@ -210,12 +356,108 @@ const resources = {
         myLists: "Мої списки",
         customCollections: "Власні колекції",
         syncTitle: "Синхронізуйте та персоналізуйте свою бібліотеку",
-        syncSubtext: "Увійдіть за допомогою Google, щоб створювати власні колекції аніме, відстежувати свій прогрес перегляду та синхронізувати все в офлайні."
+        syncSubtext: "Увійдіть за допомогою Google, щоб створювати власні колекції аніме, відстежувати свій прогрес перегляду та синхронізувати все в офлайні.",
+        notInCatalog: "Аніме відсутнє в каталозі",
+        noTrackedAnime: "У цьому списку немає аніме",
+        goToCatalog: "Перейдіть до каталогу, щоб додати!",
+        myCollections: "Мої колекції",
+        createCollection: "Створити нову колекцію",
+        noCustomCollections: "Ви ще не створили жодної власної колекції.",
+        createFirstCollection: "Створіть свою першу колекцію",
+        newCollection: "Нова колекція",
+        titleLabel: "Назва",
+        descriptionOpt: "Опис (необов'язково)",
+        placeholderTitle: "Наприклад: Шедеври, Подивлюся наступним",
+        placeholderDesc: "Наприклад: Серіали, що справили на мене глибоке враження.",
+        cancel: "Скасувати",
+        create: "Створити",
+        creating: "Створення...",
+        noDescription: "Опис відсутній.",
+        empty: "Порожньо",
+        viewDetails: "Детальніше →"
       },
       common: {
         signOut: "Вийти",
         signInGoogle: "Увійти через Google",
         poweredBy: "Працює на SQLite WASM + Supabase"
+      },
+      filter: {
+        title: "Фільтри",
+        sortBy: "Сортувати за",
+        format: "Формат",
+        status: "Статус",
+        episodes: "Епізоди",
+        scoreRange: "Діапазон оцінок",
+        minScore: "Мін.",
+        maxScore: "Макс.",
+        toScore: "до",
+        source: "Джерело",
+        genres: "Жанри ({{count}})",
+        searchGenres: "Пошук жанрів...",
+        tags: "Теги ({{count}})",
+        searchTags: "Пошук тегів...",
+        studios: "Студії ({{count}})",
+        searchStudios: "Пошук студій...",
+        language: "Мова",
+        hasUkTranslation: "Має український переклад",
+        clearAll: "Очистити всі фільтри"
+      },
+      sortOptions: {
+        SCORE: "Оцінка ↓",
+        SCORE_ASC: "Оцінка ↑",
+        POPULARITY: "Популярність ↓",
+        POPULARITY_ASC: "Популярність ↑",
+        YEAR_DESC: "Рік ↓",
+        YEAR_ASC: "Рік ↑",
+        TITLE: "Назва А→Я",
+        TITLE_DESC: "Назва Я→А",
+        RELEVANCE: "Відповідність",
+        START_DATE_DESC: "Дата початку ↓",
+        START_DATE_ASC: "Дата початку ↑",
+        EPISODES_DESC: "Епізоди ↓",
+        EPISODES_ASC: "Епізоди ↑"
+      },
+      episodeGroups: {
+        LESS_THAN_12: "< 12 серій",
+        BETWEEN_12_AND_18: "12–18 серій",
+        BETWEEN_19_AND_24: "19–24 серій",
+        GREATER_THAN_24: "> 24 серій"
+      },
+      formats: {
+        TV: "ТБ",
+        TV_SHORT: "Короткометражне",
+        MOVIE: "Фільм",
+        SPECIAL: "Спешл",
+        OVA: "OVA",
+        ONA: "ONA",
+        MUSIC: "Кліп",
+        MANGA: "Манґа",
+        NOVEL: "Новела",
+        ONE_SHOT: "Ван-шот"
+      },
+      airingStatus: {
+        FINISHED: "Завершено",
+        RELEASING: "Транслюється",
+        NOT_YET_RELEASED: "Анонсовано",
+        CANCELLED: "Скасовано",
+        HIATUS: "Перервано"
+      },
+      sources: {
+        ORIGINAL: "Оригінал",
+        MANGA: "Манґа",
+        LIGHT_NOVEL: "Ранобе",
+        VISUAL_NOVEL: "Візуальна новела",
+        VIDEO_GAME: "Відеогра",
+        OTHER: "Інше",
+        NOVEL: "Новела",
+        DOUJINSHI: "Доджінші",
+        ANIME: "Аніме",
+        WEB_NOVEL: "Веб-новела",
+        LIVE_ACTION: "Лайв-екшн",
+        GAME: "Гра",
+        COMIC: "Комікс",
+        MULTIMEDIA_PROJECT: "Мультимедійний проєкт",
+        PICTURE_BOOK: "Книжка з картинками"
       }
     }
   }

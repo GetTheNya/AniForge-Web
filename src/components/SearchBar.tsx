@@ -2,6 +2,8 @@
  * SearchBar — Glassmorphic search input with result count and loading state.
  */
 
+import { useTranslation } from "react-i18next";
+
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
@@ -17,6 +19,7 @@ export default function SearchBar({
   isSearching,
   placeholder = 'Search anime by title, description, or ID...',
 }: SearchBarProps) {
+  const { t } = useTranslation();
   return (
     <div className="relative w-full">
       {/* Search icon */}
@@ -57,7 +60,7 @@ export default function SearchBar({
       {resultCount !== null && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <span className="text-xs font-medium text-[var(--color-text-secondary)] tabular-nums">
-            {resultCount.toLocaleString()} results
+            {resultCount.toLocaleString()} {t('catalog.results')}
           </span>
         </div>
       )}

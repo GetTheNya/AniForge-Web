@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '../hooks/useNavigation';
 import { useAnimeDetail } from '../hooks/useAnimeDetail';
@@ -106,7 +107,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       const diff = anime.airing_at! - now;
 
       if (diff <= 0) {
-        setCountdownText('Airing soon!');
+        setCountdownText(t('detail.airingSoon'));
         clearInterval(interval);
         return;
       }
@@ -116,16 +117,16 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       const minutes = Math.floor((diff % 3600) / 60);
       const seconds = diff % 60;
 
-      let text = `Ep. ${anime.airing_episode || '?'} airs in `;
-      if (days > 0) text += `${days}d `;
-      if (hours > 0 || days > 0) text += `${hours}h `;
-      text += `${minutes}m ${seconds}s`;
+      let text = t('detail.airingEp', { episode: anime.airing_episode || '?' }) + ' ';
+      if (days > 0) text += `${days}${t('detail.daysShort')} `;
+      if (hours > 0 || days > 0) text += `${hours}${t('detail.hoursShort')} `;
+      text += `${minutes}${t('detail.minutesShort')} ${seconds}${t('detail.secondsShort')}`;
 
       setCountdownText(text);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [anime]);
+  }, [anime, t]);
 
   // Debounced notes saving
   const handleNotesChange = (val: string) => {
@@ -187,11 +188,15 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     }
   };
 
+  const checkIfParent = (e: React.MouseEvent<HTMLDivElement>, callback: Function) => {
+    if (e.target === e.currentTarget) callback();
+  }
+
   if (isLoading && !anime) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-[var(--color-accent-primary)]/20 border-t-[var(--color-accent-primary)] animate-spin" />
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading anime details...</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">{t('detail.loadingDetails')}</p>
       </div>
     );
   }
@@ -200,9 +205,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
         <div className="w-16 h-16 rounded-2xl bg-[var(--color-accent-rose)]/15 flex items-center justify-center text-[var(--color-accent-rose)] text-3xl">⚠️</div>
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Details Unavailable</h2>
-        <p className="text-sm text-[var(--color-text-secondary)] max-w-md">{error || 'Could not retrieve catalog data for this anime.'}</p>
-        <button onClick={() => navigate('/')} className="glass-button mt-2">Back to Catalog</button>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('detail.detailsUnavailable')}</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] max-w-md">{error || t('detail.couldNotRetrieve')}</p>
+        <button onClick={() => navigate('/')} className="glass-button mt-2">{t('detail.backToCatalog')}</button>
       </div>
     );
   }
@@ -298,7 +303,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               {anime.format && <StatusBadge type="format" value={anime.format} />}
               {anime.season_year && (
                 <span className="text-xs text-[var(--color-text-secondary)] font-medium">
-                  {anime.season?.toLowerCase()} {anime.season_year}
+                  {anime.season ? t(`season.${anime.season.toLowerCase()}`) : ''} {anime.season_year}
                 </span>
               )}
               {anime.is_adult && (
@@ -382,12 +387,12 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   {/* Screenshots gallery */}
                   {screenshots.length > 0 && (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.screenshots', 'Screenshots')}</h3>
+                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.screenshots')}</h3>
                       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
                         {screenshots.map((url, idx) => (
                           <div
                             key={idx}
-                            onClick={() => setLightboxIndex(idx)}
+                            onClick={() => setLightboxIndex(idx + 1)}
                             className="w-40 md:w-52 aspect-video rounded-lg overflow-hidden border border-[var(--color-border-glass)] flex-shrink-0 cursor-pointer hover:border-[var(--color-border-glass-hover)] transition-all bg-[var(--color-bg-base)]"
                           >
                             <img src={url} alt={`Screenshot ${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-all duration-300" />
@@ -404,7 +409,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                       <div className="relative aspect-video rounded-xl overflow-hidden border border-[var(--color-border-glass)] bg-[var(--color-bg-base)]">
                         <iframe
                           src={`https://www.youtube.com/embed/${anime.trailer_id}`}
-                          title={`${title} Trailer`}
+                          title={t('detail.trailerTitle', { title })}
                           className="absolute inset-0 w-full h-full border-0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -442,7 +447,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                                 {rel.displayTitle || rel.title_en || rel.title_romaji}
                               </h4>
                               <p className="text-[10px] text-[var(--color-text-secondary)]">
-                                {rel.format} • {rel.season_year || 'Year ?'}
+                                {rel.format} • {rel.season_year || t('detail.yearUnknown')}
                               </p>
                               {rel.status && (
                                 <div className="mt-1">
@@ -501,7 +506,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     <div className="space-y-4">
                       <div className="p-4 rounded-xl border border-[var(--color-accent-primary)]/20 bg-[var(--color-accent-primary)]/5">
                         <h4 className="text-sm font-bold text-[var(--color-accent-primary)]">
-                          {franchise.name || franchise.name_en || franchise.name_uk || 'Franchise'}
+                          {franchise.name || franchise.name_en || franchise.name_uk || t('detail.franchise')}
                         </h4>
                         <p className="text-xs text-[var(--color-text-secondary)] mt-1">
                           {t('detail.franchiseTimelineInfo', { count: franchiseReleaseCount })}
@@ -640,7 +645,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
                     <span>{t('detail.episodeProgress')}</span>
                     <span className="text-[var(--color-text-tertiary)]">
-                      max: {anime.episodes || '?'}
+                      {t('detail.maxEpisodes', { count: anime.episodes || '?' })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -692,7 +697,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
                     <span>{t('detail.privateNotes')}</span>
                     {isSavingNotes && (
-                      <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">Saving...</span>
+                      <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">{t('detail.saving')}</span>
                     )}
                   </div>
                   <textarea
@@ -731,7 +736,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               <div>
                 <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.totalEpisodes')}</h4>
-                <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.episodes || 'Unknown'}</p>
+                <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.episodes || t('detail.unknown')}</p>
               </div>
 
               {anime.duration && (
@@ -795,8 +800,10 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       </div>
 
       {/* ─── Lightbox Modal for screenshots ─────────────────────────────────── */}
-      {lightboxIndex !== null && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      {lightboxIndex !== null && createPortal(
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          onClick={(e) => checkIfParent(e, () => setLightboxIndex(null))}
+        >
           <button
             onClick={() => setLightboxIndex(null)}
             className="absolute top-4 right-4 text-white text-3xl font-light hover:opacity-85 cursor-pointer z-50"
@@ -807,12 +814,14 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           <button
             disabled={lightboxIndex === 0}
             onClick={() => setLightboxIndex((p) => p! - 1)}
-            className="absolute left-4 text-white text-3xl font-light hover:opacity-85 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+            className="group absolute left-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-center text-white text-5xl font-light hover:bg-white/5 transition-all duration-200 disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed z-40"
           >
-            ‹
+            <span className="transition-transform duration-200 group-hover:scale-125 group-active:scale-95 group-disabled:scale-100 select-none">
+              ‹
+            </span>
           </button>
 
-          <div className="max-w-5xl max-h-[80vh] flex items-center justify-center">
+          <div className="max-w-5xl max-h-[80vh] flex items-center justify-center z-10">
             <img
               src={lightboxIndex === 0 && coverUrl ? coverUrl : screenshots[lightboxIndex - (coverUrl ? 1 : 0)]}
               alt=""
@@ -823,16 +832,24 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           <button
             disabled={lightboxIndex === (screenshots.length - 1 + (coverUrl ? 1 : 0))}
             onClick={() => setLightboxIndex((p) => p! + 1)}
-            className="absolute right-4 text-white text-3xl font-light hover:opacity-85 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+            className="group absolute right-0 top-0 bottom-0 w-20 md:w-32 flex items-center justify-center text-white text-5xl font-light hover:bg-white/5 transition-all duration-200 disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed z-40"
           >
-            ›
+            <span className="transition-transform duration-200 group-hover:scale-125 group-active:scale-95 group-disabled:scale-100 select-none">
+              ›
+            </span>
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ─── Collection Management Modal ────────────────────────────────────── */}
-      {showCollectionModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showCollectionModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => checkIfParent(e, () => {
+            setShowCollectionModal(false);
+            setShowCreateCollection(false);
+          })}
+        >
           <div className="glass-card w-full max-w-md p-6 space-y-4 animate-scale-in max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-[var(--color-border-glass)] pb-2">
               <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.addToCollection')}</h3>
@@ -856,7 +873,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     required
                     value={newCollectionName}
                     onChange={(e) => setNewCollectionName(e.target.value)}
-                    placeholder="E.g., Summer Favorites"
+                    placeholder={t('detail.namePlaceholder')}
                     className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
                   />
                 </div>
@@ -943,7 +960,8 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
@@ -963,6 +981,7 @@ function FranchiseTimelineLoader({
   currentAnilistId,
   navigate,
 }: FranchiseTimelineLoaderProps) {
+  const { t } = useTranslation();
   const { queryObjects } = useDatabase();
   const { getAnimeTitle } = useSettings();
   const [entries, setEntries] = useState<Anime[]>([]);
@@ -1032,7 +1051,7 @@ function FranchiseTimelineLoader({
                   {entry.displayTitle || entry.title_en || entry.title_romaji}
                 </h5>
                 <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">
-                  {entry.format} • {entry.season_year || 'Year ?'}
+                  {entry.format} • {entry.season_year || t('detail.yearUnknown')}
                 </p>
                 {entry.status && (
                   <div className="mt-1">

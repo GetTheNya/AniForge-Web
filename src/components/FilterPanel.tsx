@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SearchFilterQuery, SortOption, EpisodeGroup } from '../types/filters';
 import type { Genre, Tag, Studio } from '../types/anime';
 import { ANIME_FORMATS, ANIME_STATUSES, MEDIA_SOURCES } from '../types/anime';
@@ -49,6 +50,7 @@ export default function FilterPanel({
   studios,
   isLoaded,
 }: FilterPanelProps) {
+  const { t } = useTranslation();
   const { preferUkTitles } = useSettings();
   const [isExpanded, setIsExpanded] = useState(false);
   const [genreSearch, setGenreSearch] = useState('');
@@ -94,7 +96,7 @@ export default function FilterPanel({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-          Filters
+          {t('filter.title')}
           {activeFilterCount > 0 && (
             <span className="glass-badge bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/30">
               {activeFilterCount}
@@ -110,7 +112,7 @@ export default function FilterPanel({
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {t(`sortOptions.${opt.value}`, opt.label)}
             </option>
           ))}
         </select>
@@ -119,12 +121,12 @@ export default function FilterPanel({
       {isExpanded && isLoaded && (
         <div className="space-y-5 animate-fade-in">
           {/* Format chips */}
-          <FilterSection title="Format">
+          <FilterSection title={t('filter.format')}>
             <div className="flex flex-wrap gap-1.5">
               {ANIME_FORMATS.map((fmt) => (
                 <ToggleChip
                   key={fmt}
-                  label={fmt.replace(/_/g, ' ')}
+                  label={t(`formats.${fmt}`, fmt.replace(/_/g, ' '))}
                   isActive={filter.formats.includes(fmt)}
                   isExcluded={filter.excludedFormats.includes(fmt)}
                   onToggle={() => {
@@ -145,12 +147,12 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Status chips */}
-          <FilterSection title="Status">
+          <FilterSection title={t('filter.status')}>
             <div className="flex flex-wrap gap-1.5">
               {ANIME_STATUSES.map((st) => (
                 <ToggleChip
                   key={st}
-                  label={st.replace(/_/g, ' ')}
+                  label={t(`airingStatus.${st}`, st.replace(/_/g, ' '))}
                   isActive={filter.mediaStatuses.includes(st)}
                   isExcluded={filter.excludedMediaStatuses.includes(st)}
                   onToggle={() => {
@@ -171,12 +173,12 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Episode count */}
-          <FilterSection title="Episodes">
+          <FilterSection title={t('filter.episodes')}>
             <div className="flex flex-wrap gap-1.5">
               {EPISODE_GROUPS.map((eg) => (
                 <ToggleChip
                   key={eg.value}
-                  label={eg.label}
+                  label={t(`episodeGroups.${eg.value}`, eg.label)}
                   isActive={filter.episodeGroups.includes(eg.value)}
                   isExcluded={filter.excludedEpisodeGroups.includes(eg.value)}
                   onToggle={() => {
@@ -197,27 +199,27 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Score range */}
-          <FilterSection title="Score Range">
+          <FilterSection title={t('filter.scoreRange')}>
             <div className="flex items-center gap-3">
               <input
                 type="number"
                 min="0"
                 max="10"
                 step="0.5"
-                placeholder="Min"
+                placeholder={t('filter.minScore')}
                 value={filter.minScore ?? ''}
                 onChange={(e) =>
                   update({ minScore: e.target.value ? parseFloat(e.target.value) : null })
                 }
                 className="glass-input py-1.5 px-3 w-20 text-xs text-center"
               />
-              <span className="text-[var(--color-text-tertiary)] text-xs">to</span>
+              <span className="text-[var(--color-text-tertiary)] text-xs">{t('filter.toScore')}</span>
               <input
                 type="number"
                 min="0"
                 max="10"
                 step="0.5"
-                placeholder="Max"
+                placeholder={t('filter.maxScore')}
                 value={filter.maxScore ?? ''}
                 onChange={(e) =>
                   update({ maxScore: e.target.value ? parseFloat(e.target.value) : null })
@@ -228,12 +230,12 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Source chips */}
-          <FilterSection title="Source">
+          <FilterSection title={t('filter.source')}>
             <div className="flex flex-wrap gap-1.5">
               {MEDIA_SOURCES.slice(0, 8).map((src) => (
                 <ToggleChip
                   key={src}
-                  label={src.replace(/_/g, ' ')}
+                  label={t(`sources.${src}`, src.replace(/_/g, ' '))}
                   isActive={filter.mediaSources.includes(src)}
                   isExcluded={filter.excludedMediaSources.includes(src)}
                   onToggle={() => {
@@ -254,10 +256,10 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Genres with search */}
-          <FilterSection title={`Genres (${genres.length})`}>
+          <FilterSection title={t('filter.genres', { count: genres.length })}>
             <input
               type="text"
-              placeholder="Search genres..."
+              placeholder={t('filter.searchGenres')}
               value={genreSearch}
               onChange={(e) => setGenreSearch(e.target.value)}
               className="glass-input py-1.5 px-3 w-full text-xs mb-2"
@@ -287,10 +289,10 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Tags with search */}
-          <FilterSection title={`Tags (${tags.length})`}>
+          <FilterSection title={t('filter.tags', { count: tags.length })}>
             <input
               type="text"
-              placeholder="Search tags..."
+              placeholder={t('filter.searchTags')}
               value={tagSearch}
               onChange={(e) => setTagSearch(e.target.value)}
               className="glass-input py-1.5 px-3 w-full text-xs mb-2"
@@ -320,10 +322,10 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Studios with search */}
-          <FilterSection title={`Studios (${studios.length})`}>
+          <FilterSection title={t('filter.studios', { count: studios.length })}>
             <input
               type="text"
-              placeholder="Search studios..."
+              placeholder={t('filter.searchStudios')}
               value={studioSearch}
               onChange={(e) => setStudioSearch(e.target.value)}
               className="glass-input py-1.5 px-3 w-full text-xs mb-2"
@@ -353,7 +355,7 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Ukrainian translation toggle */}
-          <FilterSection title="Language">
+          <FilterSection title={t('filter.language')}>
             <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--color-text-secondary)]">
               <input
                 type="checkbox"
@@ -363,7 +365,7 @@ export default function FilterPanel({
                 }
                 className="accent-[var(--color-accent-primary)]"
               />
-              Has Ukrainian translation
+              {t('filter.hasUkTranslation')}
             </label>
           </FilterSection>
 
@@ -396,7 +398,7 @@ export default function FilterPanel({
               }
               className="w-full py-2 text-xs font-medium text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)]/20 rounded-lg transition-colors border border-[var(--color-accent-rose)]/20"
             >
-              Clear All Filters
+              {t('filter.clearAll')}
             </button>
           )}
         </div>

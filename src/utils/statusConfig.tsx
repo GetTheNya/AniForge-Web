@@ -8,6 +8,14 @@ export const STATUS_COLORS = {
   DROPPED: '#EF4444',
 } as const;
 
+export const STATUS_COLORS_BG = {
+  PLANNING: 'bg-[#9067C6]',
+  CURRENT: 'bg-[#3B82F6]',
+  COMPLETED: 'bg-[#10B981]',
+  PAUSED: 'bg-[#F59E0B]',
+  DROPPED: 'bg-[#EF4444]',
+} as const;
+
 export interface StatusItemConfig {
   id: keyof typeof STATUS_COLORS;
   color: string;
