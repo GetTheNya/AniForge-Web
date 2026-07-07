@@ -157,7 +157,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="border-t border-[var(--color-border-glass)] py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <p className="text-xs text-[var(--color-text-muted)]">
-            AniForge Web • {t('library.subtext')}
+            AniForge Web {import.meta.env.VITE_APP_VERSION || 'v0.0.0-dev'} • {t('library.subtext')}
           </p>
           <p className="text-xs text-[var(--color-text-muted)]">
             {t('common.poweredBy')}
