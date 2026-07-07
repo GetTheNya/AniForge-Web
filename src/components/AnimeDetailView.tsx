@@ -851,7 +851,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                       onClick={() => filterBySource(anime.source)}
                       className="px-2.5 py-1 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] font-medium transition-all cursor-pointer active:scale-95 text-left"
                     >
-                      {anime.source.replace(/_/g, ' ')}
+                      {t(`sources.${anime.source}`, anime.source.replace(/_/g, ' '))}
                     </button>
                   </div>
                 </div>
