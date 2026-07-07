@@ -1144,7 +1144,7 @@ function FranchiseTimelineLoader({
           <div key={entry.anilist_id} className="relative group">
             {/* Timeline node dot indicator */}
             <span
-              className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
+              className={`absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
                 isCurrent
                   ? 'border-[var(--color-accent-primary)] bg-[var(--color-bg-base)] shadow-[0_0_12px_var(--color-accent-primary)]'
                   : 'border-[var(--color-text-muted)] bg-[var(--color-bg-elevated)] group-hover:border-[var(--color-text-secondary)]'

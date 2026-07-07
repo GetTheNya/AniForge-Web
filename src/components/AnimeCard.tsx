@@ -90,7 +90,7 @@ export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent opacity-0 transition-opacity duration-300" />
 
         {/* Score badge (top-right) */}
         {anime.score_mal !== null && anime.score_mal > 0 && (
