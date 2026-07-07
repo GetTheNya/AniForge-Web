@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
 import { useUserTracking } from '../context/UserTrackingContext';
+import { useSettings } from '../context/SettingsContext';
 import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime, type Genre, type Tag, type Studio, type AnimeStaff, type Franchise } from '../types/anime';
 import type { UserTracking } from '../types/supabase';
@@ -29,6 +30,7 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
   const { db, status, queryObjects } = useDatabase();
   const { user } = useAuth();
   const { saveTracking, removeTracking } = useUserTracking();
+  const { getAnimeTitle, preferUkTitles } = useSettings();
 
   const [anime, setAnime] = useState<Anime | null>(null);
   const [screenshots, setScreenshots] = useState<string[]>([]);
@@ -82,6 +84,7 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
         throw new Error('Anime not found in catalog');
       }
       const animeObj = rowToAnime(animeRows[0]);
+      animeObj.displayTitle = getAnimeTitle(animeObj);
       setAnime(animeObj);
 
       // 2. Screenshots
@@ -102,7 +105,13 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
          ORDER BY target.season_year ASC, target.updated_at ASC`,
         [anilistId]
       );
-      setRelations(relationRows.map(rowToAnime));
+      setRelations(
+        relationRows.map((row) => {
+          const a = rowToAnime(row);
+          a.displayTitle = getAnimeTitle(a);
+          return a;
+        })
+      );
 
       // 4. Franchise
       const franchiseRows = queryObjects<Franchise>(
@@ -114,7 +123,11 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
       );
       if (franchiseRows.length > 0) {
         const fr = franchiseRows[0];
-        setFranchise(fr);
+        const name = preferUkTitles ? (fr.name_uk || fr.name_en || '') : (fr.name_en || fr.name_uk || '');
+        setFranchise({
+          ...fr,
+          name,
+        });
 
         const countRows = queryObjects<{ cnt: number }>(
           'SELECT COUNT(*) as cnt FROM anime_franchises WHERE franchise_id = ?',
@@ -134,7 +147,11 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
          WHERE ag.anilist_id = ?`,
         [anilistId]
       );
-      setGenres(genreRows);
+      const localizedGenres = genreRows.map((g) => ({
+        ...g,
+        name: preferUkTitles ? (g.name_uk || g.name_en) : g.name_en,
+      }));
+      setGenres(localizedGenres);
 
       // 6. Tags
       const tagRows = queryObjects<Tag>(
@@ -144,7 +161,11 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
          WHERE at2.anilist_id = ?`,
         [anilistId]
       );
-      setTags(tagRows);
+      const localizedTags = tagRows.map((t) => ({
+        ...t,
+        name: preferUkTitles ? (t.name_uk || t.name_en) : t.name_en,
+      }));
+      setTags(localizedTags);
 
       // 7. Staff
       const staffRows = queryObjects<AnimeStaff>(
@@ -176,7 +197,13 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
          ORDER BY target.score_mal DESC, target.updated_at DESC`,
         [anilistId]
       );
-      setRecommendations(recRows.map(rowToAnime));
+      setRecommendations(
+        recRows.map((row) => {
+          const a = rowToAnime(row);
+          a.displayTitle = getAnimeTitle(a);
+          return a;
+        })
+      );
 
     } catch (e) {
       console.error('[useAnimeDetail] Error loading detail:', e);
@@ -184,7 +211,7 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
     } finally {
       setIsLoading(false);
     }
-  }, [db, status, anilistId, queryObjects]);
+  }, [db, status, anilistId, queryObjects, getAnimeTitle, preferUkTitles]);
 
   const updateTracking = useCallback(
     async (updates: Partial<Omit<UserTracking, 'anilist_id' | 'last_modified'>>) => {

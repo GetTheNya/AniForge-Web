@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '../hooks/useNavigation';
 import { useAnimeDetail } from '../hooks/useAnimeDetail';
 import { useAuth } from '../context/AuthContext';
 import { useDatabase } from '../context/DatabaseContext';
+import { useSettings } from '../context/SettingsContext';
 import { rowToAnime, type Anime } from '../types/anime';
 import { STATUS_CONFIGS } from '../utils/statusConfig';
 import StatusBadge from './StatusBadge';
@@ -18,6 +20,8 @@ interface AnimeDetailViewProps {
 export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const { navigate } = useNavigation();
   const { user, signInWithGoogle } = useAuth();
+  const { t } = useTranslation();
+  const { preferUkTitles } = useSettings();
   const {
     anime,
     screenshots,
@@ -205,8 +209,30 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
   const coverUrl = anime.cover_extra_large || anime.cover_large;
   const bannerUrl = anime.banner_image || coverUrl;
-  const title = anime.title_en || anime.title_romaji;
-  const subtitle = anime.title_en ? anime.title_romaji : anime.title_uk;
+
+  let title = '';
+  let subtitle: string | null = null;
+
+  if (preferUkTitles) {
+    if (anime.title_uk) {
+      title = anime.title_uk;
+      subtitle = anime.title_romaji || null;
+    } else if (anime.title_en) {
+      title = anime.title_en;
+      subtitle = anime.title_romaji || null;
+    } else {
+      title = anime.title_romaji;
+      subtitle = null;
+    }
+  } else {
+    if (anime.title_en) {
+      title = anime.title_en;
+      subtitle = anime.title_romaji || null;
+    } else {
+      title = anime.title_romaji;
+      subtitle = null;
+    }
+  }
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
@@ -230,7 +256,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             onClick={() => navigate('/')}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
           >
-            ← Back
+            ← {t('detail.backToCatalog')}
           </button>
           
           {user && (
@@ -238,7 +264,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               onClick={() => setShowCollectionModal(true)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 text-xs font-semibold text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20 transition-all cursor-pointer shadow-lg"
             >
-              📥 Collection
+              📥 {t('detail.addToCollection')}
             </button>
           )}
         </div>
@@ -255,7 +281,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <span className="text-white text-xs font-medium">View Poster</span>
+                <span className="text-white text-xs font-medium">{t('detail.viewPoster')}</span>
               </div>
             </div>
           )}
@@ -310,18 +336,24 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           
           {/* Synopsis */}
           <div className="glass-card p-6 space-y-3">
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Synopsis</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.synopsis')}</h2>
             <div className="text-sm text-[var(--color-text-secondary)] leading-relaxed space-y-3">
-              {anime.description_en || anime.description_uk ? (
-                (anime.description_en || anime.description_uk)!
+              {(() => {
+                const synopsisText = preferUkTitles
+                  ? (anime.description_uk || anime.description_en)
+                  : (anime.description_en || anime.description_uk);
+
+                if (!synopsisText) {
+                  return <p className="italic text-[var(--color-text-muted)]">{t('detail.noDescription')}</p>;
+                }
+
+                return synopsisText
                   .replace(/<br>/gi, '\n')
                   .replace(/<[^>]*>/g, '')
                   .split('\n')
                   .filter((p) => p.trim())
-                  .map((p, i) => <p key={i}>{p}</p>)
-              ) : (
-                <p className="italic text-[var(--color-text-muted)]">No description available in catalog.</p>
-              )}
+                  .map((p, i) => <p key={i}>{p}</p>);
+              })()}
             </div>
           </div>
 
@@ -338,7 +370,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                       : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
                   }`}
                 >
-                  {tab}
+                  {t(`detail.${tab}`)}
                 </button>
               ))}
             </div>
@@ -350,7 +382,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   {/* Screenshots gallery */}
                   {screenshots.length > 0 && (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">Screenshots</h3>
+                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.screenshots', 'Screenshots')}</h3>
                       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
                         {screenshots.map((url, idx) => (
                           <div
@@ -368,7 +400,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   {/* Embedded Trailer */}
                   {anime.trailer_id && anime.trailer_site === 'youtube' && (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">Watch Trailer</h3>
+                      <h3 className="text-sm font-bold text-[var(--color-text-primary)]">{t('detail.watchTrailer')}</h3>
                       <div className="relative aspect-video rounded-xl overflow-hidden border border-[var(--color-border-glass)] bg-[var(--color-bg-base)]">
                         <iframe
                           src={`https://www.youtube.com/embed/${anime.trailer_id}`}
@@ -383,7 +415,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   
                   {!anime.trailer_id && screenshots.length === 0 && (
                     <p className="italic text-xs text-[var(--color-text-muted)] text-center py-4">
-                      No media items available for this anime.
+                      {t('detail.noMedia')}
                     </p>
                   )}
                 </div>
@@ -407,7 +439,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                             )}
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                               <h4 className="text-xs font-bold text-[var(--color-text-primary)] truncate">
-                                {rel.title_en || rel.title_romaji}
+                                {rel.displayTitle || rel.title_en || rel.title_romaji}
                               </h4>
                               <p className="text-[10px] text-[var(--color-text-secondary)]">
                                 {rel.format} • {rel.season_year || 'Year ?'}
@@ -424,7 +456,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     </div>
                   ) : (
                     <p className="italic text-xs text-[var(--color-text-muted)] text-center py-4">
-                      No relation cross-references found in catalog.
+                      {t('detail.noRelations')}
                     </p>
                   )}
                 </div>
@@ -456,7 +488,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     </div>
                   ) : (
                     <p className="italic text-xs text-[var(--color-text-muted)] text-center py-4">
-                      No staff database records registered.
+                      {t('detail.noStaff')}
                     </p>
                   )}
                 </div>
@@ -469,10 +501,10 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     <div className="space-y-4">
                       <div className="p-4 rounded-xl border border-[var(--color-accent-primary)]/20 bg-[var(--color-accent-primary)]/5">
                         <h4 className="text-sm font-bold text-[var(--color-accent-primary)]">
-                          {franchise.name_en || franchise.name_uk || 'Franchise'}
+                          {franchise.name || franchise.name_en || franchise.name_uk || 'Franchise'}
                         </h4>
                         <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                          Part of a franchise timeline containing {franchiseReleaseCount} entries.
+                          {t('detail.franchiseTimelineInfo', { count: franchiseReleaseCount })}
                         </p>
                       </div>
 
@@ -488,7 +520,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     </div>
                   ) : (
                     <p className="italic text-xs text-[var(--color-text-muted)] text-center py-4">
-                      This anime is not registered as part of any media franchise.
+                      {t('detail.noFranchise')}
                     </p>
                   )}
                 </div>
@@ -499,7 +531,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           {/* Recommendations */}
           {recommendations.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Recommended For You</h2>
+              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.recommended')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {recommendations.slice(0, 8).map((rec) => {
                   const recCover = rec.cover_large || rec.cover_extra_large;
@@ -527,7 +559,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                       </div>
                       <div className="p-2 space-y-1">
                         <h4 className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-1">
-                          {rec.title_en || rec.title_romaji}
+                          {rec.displayTitle || rec.title_en || rec.title_romaji}
                         </h4>
                         <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-semibold">
                           {rec.format} • {rec.season_year || '?'}
@@ -548,19 +580,19 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           {/* Tracking Widget */}
           <div className="glass-card p-6 space-y-5">
             <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
-              My Tracking
+              {t('detail.myTracking')}
             </h3>
 
             {!user ? (
               <div className="text-center py-4 space-y-3">
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  Sign in with Google to synchronize your watchlists, track episode progress, rate titles, and write personal diaries.
+                  {t('detail.signInDetails')}
                 </p>
                 <button
                   onClick={signInWithGoogle}
                   className="w-full glass-button flex items-center justify-center gap-2 text-xs py-2"
                 >
-                  Sign in with Google
+                  {t('common.signInGoogle')}
                 </button>
               </div>
             ) : (
@@ -568,8 +600,8 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 
                 {/* Watch Status Buttons */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Watch Status</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.watchStatus')}</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                     {STATUS_CONFIGS.map((status) => {
                       const isActive = tracking?.watch_status === status.id;
                       
@@ -579,9 +611,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                           onClick={async () => {
                             try {
                               if (isActive) {
-                                await deleteTracking();
+                                  await deleteTracking();
                               } else {
-                                await updateTracking({ watch_status: status.id });
+                                  await updateTracking({ watch_status: status.id });
                               }
                             } catch (e) {
                               console.error('[WatchStatusButton] Update tracking failed:', e);
@@ -596,7 +628,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                           }}
                         >
                           {isActive ? status.activeIcon : status.inactiveIcon}
-                          <span>{status.label}</span>
+                          <span>{t(`status.${status.id}`)}</span>
                         </button>
                       );
                     })}
@@ -606,7 +638,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 {/* Episode Progress */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>Episode Progress</span>
+                    <span>{t('detail.episodeProgress')}</span>
                     <span className="text-[var(--color-text-tertiary)]">
                       max: {anime.episodes || '?'}
                     </span>
@@ -635,9 +667,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 {/* Score Rating out of 10 */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>My Score</span>
+                    <span>{t('detail.myScore')}</span>
                     <span className="font-bold text-[var(--color-accent-primary)]">
-                      {tracking?.score ? `${tracking.score}/10` : 'Unrated'}
+                      {tracking?.score ? `${tracking.score}/10` : t('detail.unrated')}
                     </span>
                   </div>
                   <input
@@ -658,16 +690,16 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 {/* Personal Notes */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center text-xs font-semibold text-[var(--color-text-secondary)]">
-                    <span>Private Notes</span>
+                    <span>{t('detail.privateNotes')}</span>
                     {isSavingNotes && (
-                      <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">Auto-saving...</span>
+                      <span className="text-[10px] text-[var(--color-accent-secondary)] animate-pulse">Saving...</span>
                     )}
                   </div>
                   <textarea
                     disabled={!tracking}
                     value={localNotes}
                     onChange={(e) => handleNotesChange(e.target.value)}
-                    placeholder="Write a private comment, review or watch history diary..."
+                    placeholder={t('detail.notesPlaceholder')}
                     rows={4}
                     className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] resize-none disabled:opacity-30 disabled:cursor-not-allowed"
                   />
@@ -680,13 +712,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           {/* Details / Metadata Info Badges */}
           <div className="glass-card p-6 space-y-4">
             <h3 className="text-base font-bold text-[var(--color-text-primary)] border-b border-[var(--color-border-glass)] pb-2">
-              Anime Details
+              {t('detail.animeDetails')}
             </h3>
 
             <div className="space-y-3 text-xs">
               {studios.length > 0 && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Studios</h4>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.studios')}</h4>
                   <div className="flex gap-2 flex-wrap mt-1">
                     {studios.map((st) => (
                       <span key={st.studio_id} className="px-2.5 py-1 rounded-full bg-[var(--color-accent-secondary)]/10 text-[var(--color-accent-secondary)] font-bold">
@@ -698,27 +730,27 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               )}
 
               <div>
-                <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Total Episodes</h4>
+                <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.totalEpisodes')}</h4>
                 <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.episodes || 'Unknown'}</p>
               </div>
 
               {anime.duration && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Duration</h4>
-                  <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.duration} minutes per episode</p>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.duration')}</h4>
+                  <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.duration} {t('detail.minutesPerEp')}</p>
                 </div>
               )}
 
               {anime.source && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Original Source</h4>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.originalSource')}</h4>
                   <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.source.replace(/_/g, ' ')}</p>
                 </div>
               )}
 
               {anime.status && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Airing Status</h4>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.airingStatus')}</h4>
                   <div className="mt-1">
                     <StatusBadge type="status" value={anime.status} />
                   </div>
@@ -727,11 +759,11 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               {genres.length > 0 && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Genres</h4>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.genres')}</h4>
                   <div className="flex gap-1.5 flex-wrap mt-1.5">
                     {genres.map((g) => (
                       <span key={g.slug} className="px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] text-[var(--color-text-secondary)] border border-[var(--color-border-glass)]">
-                        {g.name_en}
+                        {g.name || g.name_en}
                       </span>
                     ))}
                   </div>
@@ -740,16 +772,16 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
               {tags.length > 0 && (
                 <div>
-                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">Tags</h4>
+                  <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.tags')}</h4>
                   <div className="flex gap-1.5 flex-wrap mt-1.5">
                     {tags.slice(0, 15).map((t) => (
                       <span key={t.tag_id} className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)]" title={t.category || ''}>
-                        {t.name_en}
+                        {t.name || t.name_en}
                       </span>
                     ))}
                     {tags.length > 15 && (
                       <span className="text-[10px] text-[var(--color-text-muted)] self-center">
-                        +{tags.length - 15} more
+                        +{tags.length - 15} {t('detail.more')}
                       </span>
                     )}
                   </div>
@@ -803,7 +835,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-card w-full max-w-md p-6 space-y-4 animate-scale-in max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-[var(--color-border-glass)] pb-2">
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Add to Collection</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.addToCollection')}</h3>
               <button
                 onClick={() => {
                   setShowCollectionModal(false);
@@ -818,7 +850,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             {showCreateCollection ? (
               <form onSubmit={handleCreateCollection} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Name</label>
+                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.name')}</label>
                   <input
                     type="text"
                     required
@@ -829,11 +861,11 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">Description (Optional)</label>
+                  <label className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('detail.descriptionOpt')}</label>
                   <textarea
                     value={newCollectionDesc}
                     onChange={(e) => setNewCollectionDesc(e.target.value)}
-                    placeholder="Short description of this collection..."
+                    placeholder={t('detail.descPlaceholder')}
                     rows={2}
                     className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] resize-none"
                   />
@@ -844,14 +876,14 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                     onClick={() => setShowCreateCollection(false)}
                     className="flex-1 py-2 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] cursor-pointer"
                   >
-                    Cancel
+                    {t('detail.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isCreatingCollection}
                     className="flex-1 py-2 rounded-xl bg-[var(--color-accent-primary)] text-xs text-white font-bold hover:opacity-90 disabled:opacity-50 cursor-pointer"
                   >
-                    {isCreatingCollection ? 'Creating...' : 'Create & Add'}
+                    {isCreatingCollection ? t('detail.creating') : t('detail.createAndAdd')}
                   </button>
                 </div>
               </form>
@@ -861,13 +893,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   onClick={() => setShowCreateCollection(true)}
                   className="w-full py-2.5 rounded-xl border border-dashed border-[var(--color-accent-primary)]/40 hover:bg-[var(--color-accent-primary)]/5 text-xs font-bold text-[var(--color-accent-primary)] transition-all cursor-pointer"
                 >
-                  + Create New Collection
+                  + {t('detail.createCollection')}
                 </button>
 
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                   {collections.length === 0 ? (
                     <p className="text-xs text-[var(--color-text-muted)] text-center py-6">
-                      You haven't created any collections yet.
+                      {t('detail.noCollections')}
                     </p>
                   ) : (
                     collections.map((col) => {
@@ -906,7 +938,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   onClick={() => setShowCollectionModal(false)}
                   className="w-full py-2 rounded-xl bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] cursor-pointer"
                 >
-                  Close
+                  {t('detail.close')}
                 </button>
               </div>
             )}
@@ -932,6 +964,7 @@ function FranchiseTimelineLoader({
   navigate,
 }: FranchiseTimelineLoaderProps) {
   const { queryObjects } = useDatabase();
+  const { getAnimeTitle } = useSettings();
   const [entries, setEntries] = useState<Anime[]>([]);
 
   useEffect(() => {
@@ -943,11 +976,16 @@ function FranchiseTimelineLoader({
          ORDER BY a.season_year ASC, a.updated_at ASC`,
         [franchiseId]
       );
-      setEntries(rows.map(rowToAnime));
+      const mapped = rows.map((row) => {
+        const a = rowToAnime(row);
+        a.displayTitle = getAnimeTitle(a);
+        return a;
+      });
+      setEntries(mapped);
     } catch (e) {
       console.error('[FranchiseTimelineLoader] Error loading entries:', e);
     }
-  }, [franchiseId, queryObjects]);
+  }, [franchiseId, queryObjects, getAnimeTitle]);
 
   if (entries.length === 0) {
     return <div className="h-4 w-4 rounded-full border-2 border-t-transparent border-[var(--color-accent-primary)] animate-spin" />;
@@ -991,7 +1029,7 @@ function FranchiseTimelineLoader({
               )}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <h5 className={`text-xs font-bold truncate ${isCurrent ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-primary)]'}`}>
-                  {entry.title_en || entry.title_romaji}
+                  {entry.displayTitle || entry.title_en || entry.title_romaji}
                 </h5>
                 <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">
                   {entry.format} • {entry.season_year || 'Year ?'}

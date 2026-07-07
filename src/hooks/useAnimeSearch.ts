@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDatabase } from '../context/DatabaseContext';
+import { useSettings } from '../context/SettingsContext';
 import { buildSqlFilterQuery } from '../services/queryBuilder';
 import { rowToAnime, type Anime } from '../types/anime';
 import { EMPTY_FILTER, type SearchFilterQuery } from '../types/filters';
@@ -25,6 +26,7 @@ export function useAnimeSearch(
   offset: number = 0,
 ): UseAnimeSearchResult {
   const { db, status, queryObjects, execQuery } = useDatabase();
+  const { getAnimeTitle } = useSettings();
   const [results, setResults] = useState<Anime[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
@@ -41,7 +43,13 @@ export function useAnimeSearch(
       // Build paginated query
       const { sql, params } = buildSqlFilterQuery(filter, { limit, offset });
       const rows = queryObjects<Record<string, unknown>>(sql, params);
-      const animeList = rows.map(rowToAnime);
+      const animeList = rows.map((row) => {
+        const anime = rowToAnime(row);
+        return {
+          ...anime,
+          displayTitle: getAnimeTitle(anime),
+        };
+      });
       setResults(animeList);
 
       // Get total count for pagination
@@ -57,7 +65,7 @@ export function useAnimeSearch(
     } finally {
       setIsSearching(false);
     }
-  }, [db, status, filter, limit, offset, queryObjects, execQuery]);
+  }, [db, status, filter, limit, offset, queryObjects, execQuery, getAnimeTitle]);
 
   useEffect(() => {
     if (!db || status !== 'ready') return;

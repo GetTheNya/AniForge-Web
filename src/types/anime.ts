@@ -35,6 +35,7 @@ export interface Anime {
   popularity: number | null;
   source: MediaSource | null;
   synonyms_flat: string | null;
+  displayTitle?: string; // Hydrated at runtime
 }
 
 // ─── Enum-like string unions ────────────────────────────────────────────────────
@@ -97,6 +98,7 @@ export interface Genre {
   slug: string;
   name_en: string;
   name_uk: string | null;
+  name?: string; // Hydrated at runtime
 }
 
 export interface Tag {
@@ -104,6 +106,7 @@ export interface Tag {
   name_en: string;
   name_uk: string | null;
   category: string | null;
+  name?: string; // Hydrated at runtime
 }
 
 export interface Studio {
@@ -126,6 +129,7 @@ export interface Franchise {
   main_anilist_id: number;
   name_en: string | null;
   name_uk: string | null;
+  name?: string; // Hydrated at runtime
 }
 
 export interface Relation {

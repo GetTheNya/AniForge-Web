@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { useDatabase } from '../context/DatabaseContext';
+import { useSettings } from '../context/SettingsContext';
 import { rowToAnime, type Anime } from '../types/anime';
 
 /**
@@ -29,15 +30,16 @@ export function useUserCollections() {
  */
 export function useCollectionAnime(collectionId: string | null) {
   const { db, status, queryObjects } = useDatabase();
+  const { getAnimeTitle } = useSettings();
 
   // 1. Observe active cross-references for this collection
   const crossRefs = useLiveQuery(
     async () => {
       if (!collectionId) return [];
       const refs = await userDb.collection_anime_cross_ref
-        .where('collectionId')
-        .equals(collectionId)
-        .toArray();
+         .where('collectionId')
+         .equals(collectionId)
+         .toArray();
       
       // Filter out tombstoned items and sort by orderIndex ascending
       return refs
@@ -64,6 +66,7 @@ export function useCollectionAnime(collectionId: string | null) {
       const animeMap = new Map<number, Anime>();
       for (const row of animeRows) {
         const anime = rowToAnime(row);
+        anime.displayTitle = getAnimeTitle(anime);
         animeMap.set(anime.anilist_id, anime);
       }
 
@@ -75,10 +78,11 @@ export function useCollectionAnime(collectionId: string | null) {
       console.error('[useCollectionAnime] Error during hybrid join query:', e);
       return [];
     }
-  }, [db, status, crossRefs, queryObjects]);
+  }, [db, status, crossRefs, queryObjects, getAnimeTitle]);
 
   return {
     animeList,
     isLoading: crossRefs === undefined,
   };
 }
+

@@ -7,6 +7,7 @@ import { useMemo, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useDatabase } from '../context/DatabaseContext';
 import { useUserTracking } from '../context/UserTrackingContext';
+import { useSettings } from '../context/SettingsContext';
 import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime } from '../types/anime';
 import type { UserTracking } from '../types/supabase';
@@ -26,6 +27,7 @@ interface UseSupabaseListsResult {
 export function useSupabaseLists(): UseSupabaseListsResult {
   const { db, status, queryObjects } = useDatabase();
   const { syncStatus, sync } = useUserTracking();
+  const { getAnimeTitle } = useSettings();
 
   // Reactive IndexedDB query
   const trackingRecords = useLiveQuery(
@@ -58,6 +60,7 @@ export function useSupabaseLists(): UseSupabaseListsResult {
       const animeMap = new Map<number, Anime>();
       for (const row of animeRows) {
         const anime = rowToAnime(row);
+        anime.displayTitle = getAnimeTitle(anime);
         animeMap.set(anime.anilist_id, anime);
       }
 
@@ -77,7 +80,7 @@ export function useSupabaseLists(): UseSupabaseListsResult {
       console.error('[useSupabaseLists] Error during hybrid join query:', e);
       return [];
     }
-  }, [db, status, trackingRecords, queryObjects]);
+  }, [db, status, trackingRecords, queryObjects, getAnimeTitle]);
 
   const refresh = useCallback(async () => {
     await sync();

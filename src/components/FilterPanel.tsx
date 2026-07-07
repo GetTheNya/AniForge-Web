@@ -7,6 +7,7 @@ import { useState } from 'react';
 import type { SearchFilterQuery, SortOption, EpisodeGroup } from '../types/filters';
 import type { Genre, Tag, Studio } from '../types/anime';
 import { ANIME_FORMATS, ANIME_STATUSES, MEDIA_SOURCES } from '../types/anime';
+import { useSettings } from '../context/SettingsContext';
 
 interface FilterPanelProps {
   filter: SearchFilterQuery;
@@ -48,6 +49,7 @@ export default function FilterPanel({
   studios,
   isLoaded,
 }: FilterPanelProps) {
+  const { preferUkTitles } = useSettings();
   const [isExpanded, setIsExpanded] = useState(false);
   const [genreSearch, setGenreSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
@@ -264,7 +266,7 @@ export default function FilterPanel({
               {filteredGenres.slice(0, 30).map((g) => (
                 <ToggleChip
                   key={g.slug}
-                  label={g.name_en}
+                  label={preferUkTitles ? (g.name_uk || g.name_en) : g.name_en}
                   isActive={filter.genres.includes(g.slug)}
                   isExcluded={filter.excludedGenres.includes(g.slug)}
                   onToggle={() => {
@@ -297,7 +299,7 @@ export default function FilterPanel({
               {filteredTags.slice(0, 30).map((t) => (
                 <ToggleChip
                   key={t.tag_id}
-                  label={t.name_en}
+                  label={preferUkTitles ? (t.name_uk || t.name_en) : t.name_en}
                   isActive={filter.tags.includes(t.tag_id)}
                   isExcluded={filter.excludedTags.includes(t.tag_id)}
                   onToggle={() => {

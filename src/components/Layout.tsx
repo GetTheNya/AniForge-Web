@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '../hooks/useNavigation';
@@ -11,6 +12,7 @@ export default function Layout({ children }: LayoutProps) {
   const { status, version, recordCount, progress } = useDatabase();
   const { user, profile, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const { pathname, navigate } = useNavigation();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,7 +46,7 @@ export default function Layout({ children }: LayoutProps) {
                       : 'text-[var(--color-text-secondary)] hover:text-white'
                   }`}
                 >
-                  Catalog
+                  {t('nav.catalog')}
                 </button>
                 <button
                   onClick={() => navigate('/library')}
@@ -54,7 +56,18 @@ export default function Layout({ children }: LayoutProps) {
                       : 'text-[var(--color-text-secondary)] hover:text-white'
                   }`}
                 >
-                  Library
+                  {t('nav.library')}
+                </button>
+                <button
+                  onClick={() => navigate('/settings')}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    pathname === '/settings'
+                      ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-white'
+                  }`}
+                >
+                  <span>⚙️</span>
+                  <span>{t('nav.settings')}</span>
                 </button>
               </nav>
             </div>
@@ -84,7 +97,7 @@ export default function Layout({ children }: LayoutProps) {
                     onClick={signOut}
                     className="glass-badge bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] border-[var(--color-border-glass)] hover:border-[var(--color-accent-rose)]/40 hover:text-[var(--color-accent-rose)] transition-all cursor-pointer text-xs py-1.5 px-3"
                   >
-                    Sign Out
+                    {t('common.signOut')}
                   </button>
                 </div>
               ) : (
@@ -115,7 +128,7 @@ export default function Layout({ children }: LayoutProps) {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Sign in with Google
+                  {t('common.signInGoogle')}
                 </button>
               )}
             </div>
@@ -142,10 +155,10 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="border-t border-[var(--color-border-glass)] py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <p className="text-xs text-[var(--color-text-muted)]">
-            AniForge Web • Offline-First Anime Catalog
+            AniForge Web • {t('library.subtext')}
           </p>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Powered by SQLite WASM + Supabase
+            {t('common.poweredBy')}
           </p>
         </div>
       </footer>
@@ -166,17 +179,19 @@ function DatabaseStatusPill({
   recordCount: number | null;
   progress: number;
 }) {
+  const { t } = useTranslation();
+
   const statusConfig: Record<string, { color: string; label: string }> = {
-    idle: { color: 'text-[var(--color-text-muted)]', label: 'Idle' },
-    loading: { color: 'text-[var(--color-status-upcoming)]', label: 'Loading...' },
-    ready: { color: 'text-[var(--color-status-releasing)]', label: 'Ready' },
-    checking: { color: 'text-[var(--color-accent-secondary)]', label: 'Checking...' },
+    idle: { color: 'text-[var(--color-text-muted)]', label: t('dbStatus.idle') },
+    loading: { color: 'text-[var(--color-status-upcoming)]', label: t('dbStatus.loading') },
+    ready: { color: 'text-[var(--color-status-releasing)]', label: t('dbStatus.ready') },
+    checking: { color: 'text-[var(--color-accent-secondary)]', label: t('dbStatus.checking') },
     downloading: {
       color: 'text-[var(--color-accent-primary)]',
-      label: `Downloading ${Math.round(progress * 100)}%`,
+      label: `${t('dbStatus.downloading')} ${Math.round(progress * 100)}%`,
     },
-    processing: { color: 'text-[var(--color-status-upcoming)]', label: 'Processing...' },
-    error: { color: 'text-[var(--color-status-cancelled)]', label: 'Error' },
+    processing: { color: 'text-[var(--color-status-upcoming)]', label: t('dbStatus.processing') },
+    error: { color: 'text-[var(--color-status-cancelled)]', label: t('dbStatus.error') },
   };
 
   const cfg = statusConfig[status] || statusConfig.idle;

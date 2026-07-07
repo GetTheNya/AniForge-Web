@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
 import FilterPanel from './components/FilterPanel';
@@ -11,6 +12,7 @@ import AnimeCard from './components/AnimeCard';
 import AnimeDetailView from './components/AnimeDetailView';
 import LibraryView from './components/LibraryView';
 import CollectionDetailsView from './components/CollectionDetailsView';
+import SettingsView from './components/SettingsView';
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
@@ -20,6 +22,7 @@ import { EMPTY_FILTER, type SearchFilterQuery } from './types/filters';
 function App() {
   const { status, error: dbError, progress } = useDatabase();
   const { pathname, search } = useNavigation();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
   const { results, isSearching, totalCount, error: searchError } = useAnimeSearch(filter);
   const catalogMeta = useCatalogMeta();
@@ -36,7 +39,7 @@ function App() {
   );
 
   // Loading / initial download state
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime' && pathname !== '/library' && pathname !== '/collection';
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime' && pathname !== '/library' && pathname !== '/collection' && pathname !== '/settings';
 
   if (isInitialLoading) {
     return (
@@ -52,7 +55,7 @@ function App() {
 
           <div className="text-center space-y-2">
             <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
-              {status === 'downloading' ? 'Downloading Anime Catalog' : 'Initializing AniForge'}
+              {status === 'downloading' ? t('catalog.downloadingCatalog') : t('catalog.initializing')}
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] max-w-md">
               {status === 'downloading'
@@ -87,7 +90,7 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Connection Error</h2>
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('catalog.connectionError')}</h2>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-md text-center">
             {dbError || 'Failed to initialize the anime catalog database.'}
           </p>
@@ -95,7 +98,7 @@ function App() {
             onClick={() => window.location.reload()}
             className="glass-button mt-2"
           >
-            Retry
+            {t('catalog.retry')}
           </button>
         </div>
       </Layout>
@@ -105,6 +108,7 @@ function App() {
   const isDetailPage = pathname === '/anime';
   const isLibraryPage = pathname === '/library';
   const isCollectionPage = pathname === '/collection';
+  const isSettingsPage = pathname === '/settings';
   const queryParams = new URLSearchParams(search);
   const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
   const collectionId = isCollectionPage ? queryParams.get('id') : null;
@@ -117,6 +121,8 @@ function App() {
         <LibraryView />
       ) : isCollectionPage ? (
         <CollectionDetailsView collectionId={collectionId} />
+      ) : isSettingsPage ? (
+        <SettingsView />
       ) : (
         <div className="space-y-6">
 
@@ -127,6 +133,7 @@ function App() {
               onChange={handleTextChange}
               resultCount={totalCount}
               isSearching={isSearching}
+              placeholder={t('catalog.searchPlaceholder')}
             />
             <FilterPanel
               filter={filter}
@@ -161,7 +168,7 @@ function App() {
                   </svg>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  {filter.textQuery ? 'No anime found matching your search' : 'Start searching to explore the catalog'}
+                  {filter.textQuery ? t('catalog.noResults') : t('catalog.startSearching')}
                 </p>
               </div>
             )

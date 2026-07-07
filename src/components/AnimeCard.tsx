@@ -14,8 +14,13 @@ interface AnimeCardProps {
 export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
   const { navigate } = useNavigation();
   const coverUrl = anime.cover_large || anime.cover_extra_large;
-  const title = anime.title_en || anime.title_romaji;
-  const subtitle = anime.title_en ? anime.title_romaji : anime.title_uk;
+  const title = anime.displayTitle || anime.title_en || anime.title_romaji;
+  
+  // Subtitle fallback logic: if main title is Ukrainian, show English/Romaji subtitle.
+  // If main title is English, show Romaji. Otherwise (if main title is Romaji), do not show Ukrainian as fallback.
+  const subtitle = anime.displayTitle === anime.title_uk
+    ? (anime.title_en || anime.title_romaji)
+    : (anime.displayTitle === anime.title_en ? anime.title_romaji : null);
 
   const scoreColor =
     anime.score_mal && anime.score_mal >= 7.5
