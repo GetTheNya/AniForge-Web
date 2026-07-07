@@ -3,7 +3,7 @@
  * Assembles the search interface with full filter panel and anime grid.
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
@@ -13,19 +13,66 @@ import AnimeDetailView from './components/AnimeDetailView';
 import LibraryView from './components/LibraryView';
 import CollectionDetailsView from './components/CollectionDetailsView';
 import SettingsView from './components/SettingsView';
+import Pagination from './components/Pagination';
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
 import { useNavigation } from './hooks/useNavigation';
 import { EMPTY_FILTER, type SearchFilterQuery } from './types/filters';
+import { filterToSearchParams, searchParamsToFilter } from './utils/filterUrl';
 
 function App() {
   const { status, error: dbError, progress } = useDatabase();
-  const { pathname, search } = useNavigation();
+  const { pathname, search, navigate } = useNavigation();
   const { t } = useTranslation();
-  const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
-  const { results, isSearching, totalCount, error: searchError } = useAnimeSearch(filter);
+
+  // Derive filter state from URL search params
+  const filter = useMemo(() => {
+    const isSearchPage = pathname === '/' || pathname === '';
+    if (!isSearchPage) {
+      return EMPTY_FILTER;
+    }
+    return searchParamsToFilter(new URLSearchParams(search));
+  }, [pathname, search]);
+
+  // Update URL search params when filter changes
+  const setFilter = useCallback(
+    (newFilter: SearchFilterQuery | ((prev: SearchFilterQuery) => SearchFilterQuery)) => {
+      const nextFilter = typeof newFilter === 'function' ? newFilter(filter) : newFilter;
+      const nextParams = filterToSearchParams(nextFilter);
+      const searchString = nextParams.toString();
+      navigate(pathname, searchString ? '?' + searchString : '', { replace: true });
+    },
+    [filter, pathname, navigate],
+  );
+
+  // Derive current page from URL query params
+  const currentPage = useMemo(() => {
+    const queryParams = new URLSearchParams(search);
+    const p = parseInt(queryParams.get('page') || '1', 10);
+    return isNaN(p) || p < 1 ? 1 : p;
+  }, [search]);
+
+  const limit = 48;
+  const offset = (currentPage - 1) * limit;
+
+  const { results, isSearching, totalCount, error: searchError } = useAnimeSearch(filter, limit, offset);
   const catalogMeta = useCatalogMeta();
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      const nextParams = filterToSearchParams(filter);
+      if (newPage > 1) {
+        nextParams.set('page', newPage.toString());
+      } else {
+        nextParams.delete('page');
+      }
+      const searchString = nextParams.toString();
+      navigate(pathname, searchString ? '?' + searchString : '', { replace: false });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [filter, pathname, navigate],
+  );
 
   const handleTextChange = useCallback(
     (text: string) => {
@@ -35,7 +82,7 @@ function App() {
         sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'SCORE' : prev.sortBy,
       }));
     },
-    [],
+    [setFilter],
   );
 
   // Loading / initial download state
@@ -154,11 +201,18 @@ function App() {
 
           {/* Results grid */}
           {results.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {results.map((anime, i) => (
-                <AnimeCard key={anime.anilist_id} anime={anime} index={i} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {results.map((anime, i) => (
+                  <AnimeCard key={anime.anilist_id} anime={anime} index={i} />
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil((totalCount || 0) / limit)}
+                onPageChange={handlePageChange}
+              />
+            </>
           ) : (
             status === 'ready' && !isSearching && (
               <div className="flex flex-col items-center justify-center py-20 gap-3 animate-fade-in">

@@ -6,7 +6,7 @@ interface LocationState {
 }
 
 interface NavigationContextType extends LocationState {
-  navigate: (pathname: string, search?: string) => void;
+  navigate: (pathname: string, search?: string, options?: { replace?: boolean }) => void;
 }
 
 // Function to restore the original URL after a 404 redirect
@@ -47,8 +47,12 @@ export const NavigationProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const navigate = (pathname: string, search: string = '') => {
-    window.history.pushState(null, '', pathname + search);
+  const navigate = (pathname: string, search: string = '', options?: { replace?: boolean }) => {
+    if (options?.replace) {
+      window.history.replaceState(null, '', pathname + search);
+    } else {
+      window.history.pushState(null, '', pathname + search);
+    }
     setCurrentLocation({ pathname, search });
   };
 

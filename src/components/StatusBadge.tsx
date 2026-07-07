@@ -5,6 +5,7 @@
 interface StatusBadgeProps {
   type: 'status' | 'format';
   value: string;
+  onClick?: () => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -46,14 +47,26 @@ const FORMAT_LABELS: Record<string, string> = {
   ONE_SHOT: 'One Shot',
 };
 
-export default function StatusBadge({ type, value }: StatusBadgeProps) {
+export default function StatusBadge({ type, value, onClick }: StatusBadgeProps) {
   const colorMap = type === 'status' ? STATUS_COLORS : FORMAT_COLORS;
   const labelMap = type === 'status' ? STATUS_LABELS : FORMAT_LABELS;
   const colors = colorMap[value] || 'bg-gray-500/15 text-gray-400 border-gray-500/20';
   const label = labelMap[value] || value.replace(/_/g, ' ');
+  const baseClass = `glass-badge ${colors}`;
+
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className={`${baseClass} cursor-pointer hover:brightness-110 active:scale-95 transition-all text-left`}
+      >
+        {label}
+      </button>
+    );
+  }
 
   return (
-    <span className={`glass-badge ${colors}`}>
+    <span className={baseClass}>
       {label}
     </span>
   );

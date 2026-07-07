@@ -12,6 +12,8 @@ import StatusBadge from './StatusBadge';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { useUserTracking } from '../context/UserTrackingContext';
+import { EMPTY_FILTER } from '../types/filters';
+import { filterToSearchParams } from '../utils/filterUrl';
 
 interface AnimeDetailViewProps {
   anilistId: number;
@@ -44,6 +46,52 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   // Local state for UI
   const [activeTab, setActiveTab] = useState<'info' | 'relations' | 'staff' | 'franchise'>('info');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [showAllTags, setShowAllTags] = useState(false);
+
+  const navigateToFilterAndScroll = (query: any) => {
+    const params = filterToSearchParams(query);
+    navigate('/', '?' + params.toString());
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
+  const filterByStudio = (studioId: number) => {
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      studios: [studioId],
+    });
+  };
+
+  const filterByStatus = (status: string | null) => {
+    if (!status) return;
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      mediaStatuses: [status as any],
+    });
+  };
+
+  const filterBySource = (source: string | null) => {
+    if (!source) return;
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      mediaSources: [source as any],
+    });
+  };
+
+  const filterByGenre = (genreSlug: string) => {
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      genres: [genreSlug],
+    });
+  };
+
+  const filterByTag = (tagId: number) => {
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      tags: [tagId],
+    });
+  };
   
   // Tracking form states
   const [localNotes, setLocalNotes] = useState('');
@@ -726,9 +774,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.studios')}</h4>
                   <div className="flex gap-2 flex-wrap mt-1">
                     {studios.map((st) => (
-                      <span key={st.studio_id} className="px-2.5 py-1 rounded-full bg-[var(--color-accent-secondary)]/10 text-[var(--color-accent-secondary)] font-bold">
+                      <button
+                        key={st.studio_id}
+                        onClick={() => filterByStudio(st.studio_id)}
+                        className="px-2.5 py-1 rounded-full bg-[var(--color-accent-secondary)]/10 hover:bg-[var(--color-accent-secondary)]/20 active:scale-95 text-[var(--color-accent-secondary)] font-bold transition-all cursor-pointer text-left"
+                      >
                         {st.name}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -749,7 +801,14 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               {anime.source && (
                 <div>
                   <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.originalSource')}</h4>
-                  <p className="text-[var(--color-text-primary)] font-medium mt-0.5">{anime.source.replace(/_/g, ' ')}</p>
+                  <div className="mt-1">
+                    <button
+                      onClick={() => filterBySource(anime.source)}
+                      className="px-2.5 py-1 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] font-medium transition-all cursor-pointer active:scale-95 text-left"
+                    >
+                      {anime.source.replace(/_/g, ' ')}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -757,7 +816,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 <div>
                   <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.airingStatus')}</h4>
                   <div className="mt-1">
-                    <StatusBadge type="status" value={anime.status} />
+                    <StatusBadge type="status" value={anime.status} onClick={() => filterByStatus(anime.status)} />
                   </div>
                 </div>
               )}
@@ -767,9 +826,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.genres')}</h4>
                   <div className="flex gap-1.5 flex-wrap mt-1.5">
                     {genres.map((g) => (
-                      <span key={g.slug} className="px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] text-[var(--color-text-secondary)] border border-[var(--color-border-glass)]">
+                      <button
+                        key={g.slug}
+                        onClick={() => filterByGenre(g.slug)}
+                        className="px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
+                      >
                         {g.name || g.name_en}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -779,15 +842,23 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 <div>
                   <h4 className="text-[var(--color-text-tertiary)] font-bold uppercase tracking-wider">{t('detail.tags')}</h4>
                   <div className="flex gap-1.5 flex-wrap mt-1.5">
-                    {tags.slice(0, 15).map((t) => (
-                      <span key={t.tag_id} className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)]" title={t.category || ''}>
+                    {(showAllTags ? tags : tags.slice(0, 15)).map((t) => (
+                      <button
+                        key={t.tag_id}
+                        onClick={() => filterByTag(t.tag_id)}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-bg-base)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-glass)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer active:scale-95 text-left"
+                        title={t.category || ''}
+                      >
                         {t.name || t.name_en}
-                      </span>
+                      </button>
                     ))}
-                    {tags.length > 15 && (
-                      <span className="text-[10px] text-[var(--color-text-muted)] self-center">
+                    {!showAllTags && tags.length > 15 && (
+                      <button
+                        onClick={() => setShowAllTags(true)}
+                        className="text-[10px] text-[var(--color-accent-primary)] hover:underline self-center cursor-pointer active:scale-95"
+                      >
                         +{tags.length - 15} {t('detail.more')}
-                      </span>
+                      </button>
                     )}
                   </div>
                 </div>

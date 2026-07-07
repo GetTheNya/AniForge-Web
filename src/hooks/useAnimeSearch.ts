@@ -67,14 +67,24 @@ export function useAnimeSearch(
     }
   }, [db, status, filter, limit, offset, queryObjects, execQuery, getAnimeTitle]);
 
+  const lastTextQueryRef = useRef(filter.textQuery);
+
   useEffect(() => {
     if (!db || status !== 'ready') return;
 
-    // Debounce text queries; instant for filter-only changes
-    const delay = filter.textQuery.length > 0 ? DEBOUNCE_MS : 0;
+    const textChanged = lastTextQueryRef.current !== filter.textQuery;
+    lastTextQueryRef.current = filter.textQuery;
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(runQuery, delay);
+    // Debounce text queries only when text query changes; instant for pagination or filter changes
+    const delay = textChanged && filter.textQuery.length > 0 ? DEBOUNCE_MS : 0;
+
+    if (delay > 0) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(runQuery, delay);
+    } else {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      runQuery();
+    }
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -57,7 +57,9 @@ const resources = {
         retry: "Retry",
         initializing: "Initializing AniForge",
         downloadingCatalog: "Downloading Anime Catalog",
-        results:"results"
+        results:"results",
+        prevPage: "Previous",
+        nextPage: "Next"
       },
       detail: {
         info: "Info",
@@ -286,7 +288,9 @@ const resources = {
         retry: "Повторити",
         initializing: "Ініціалізація AniForge",
         downloadingCatalog: "Завантаження каталогу аніме",
-        results:"результатів"
+        results:"результатів",
+        prevPage: "Назад",
+        nextPage: "Вперед"
       },
       detail: {
         info: "Інфо",
