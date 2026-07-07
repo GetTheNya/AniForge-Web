@@ -71,6 +71,17 @@ export default function Layout({ children }: LayoutProps) {
                   <span>⚙️</span>
                   <span>{t('nav.settings')}</span>
                 </button>
+                <button
+                  onClick={() => navigate('/android')}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    pathname === '/android'
+                      ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-white'
+                  }`}
+                >
+                  <span className="text-[14px]">🤖</span>
+                  <span>{t('nav.androidApp')}</span>
+                </button>
               </nav>
             </div>
 

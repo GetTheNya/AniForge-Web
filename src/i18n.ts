@@ -8,7 +8,17 @@ const resources = {
       nav: {
         catalog: "Catalog",
         library: "Library",
-        settings: "Settings"
+        settings: "Settings",
+        androidApp: "Android App"
+      },
+      download: {
+        title: "Get AniForge App",
+        subtitle: "Experience AniForge on the go",
+        description: "For the absolute best performance, seamless offline access to over 22,000 anime entries, tracking integration, and touch-optimized controls, download the native Android app.",
+        buttonAndroid: "Download for Android",
+        githubRepo: "View GitHub Project",
+        qrLabel: "Scan to download on your phone",
+        continueToWeb: "Continue to Web Version"
       },
       status: {
         watching: "Watching",
@@ -240,7 +250,17 @@ const resources = {
       nav: {
         catalog: "Каталог",
         library: "Бібліотека",
-        settings: "Налаштування"
+        settings: "Налаштування",
+        androidApp: "Додаток Android"
+      },
+      download: {
+        title: "Отримайте додаток AniForge",
+        subtitle: "Спробуйте AniForge на ходу",
+        description: "Для найкращої продуктивності, безперебійного офлайн-доступу до понад 22 000 записів аніме, інтеграції відстеження та сенсорного керування, завантажте нативний додаток для Android.",
+        buttonAndroid: "Завантажити для Android",
+        githubRepo: "Проект на GitHub",
+        qrLabel: "Відскануйте для завантаження на телефон",
+        continueToWeb: "Продовжити на веб-версії"
       },
       status: {
         watching: "Дивлюсь",

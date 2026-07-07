@@ -14,6 +14,7 @@ import LibraryView from './components/LibraryView';
 import CollectionDetailsView from './components/CollectionDetailsView';
 import SettingsView from './components/SettingsView';
 import Pagination from './components/Pagination';
+import AndroidDownloadView from './components/AndroidDownloadView';
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
@@ -25,6 +26,22 @@ function App() {
   const { status, error: dbError, progress } = useDatabase();
   const { pathname, search, navigate } = useNavigation();
   const { t } = useTranslation();
+
+  // Check if visiting from a mobile device
+  const isMobile = useMemo(() => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      window.navigator.userAgent
+    );
+  }, []);
+
+  // Redirect mobile users to /android landing page unless they have chosen to skip it
+  useEffect(() => {
+    const hasSkippedPrompt = localStorage.getItem('aniforge_skip_mobile_prompt') === 'true';
+    if (isMobile && !hasSkippedPrompt && pathname !== '/android') {
+      const currentPath = window.location.pathname + window.location.search;
+      navigate('/android', `?returnTo=${encodeURIComponent(currentPath)}`);
+    }
+  }, [isMobile, pathname, navigate]);
 
   // Derive filter state from URL search params
   const filter = useMemo(() => {
@@ -89,6 +106,7 @@ function App() {
   const isLibraryPage = pathname === '/library';
   const isCollectionPage = pathname === '/collection';
   const isSettingsPage = pathname === '/settings';
+  const isDownloadPage = pathname === '/android';
   const queryParams = new URLSearchParams(search);
   const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
   const collectionId = isCollectionPage ? queryParams.get('id') : null;
@@ -102,15 +120,15 @@ function App() {
       return `collection-${collectionId}`;
     }
     return pathname || '/';
-  }, [pathname, animeId, collectionId]);
+  }, [pathname, animeId, collectionId, isDetailPage, isCollectionPage]);
 
   // Reset scroll position to top instantly when transitionKey changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [transitionKey]);
 
-  // Loading / initial download state
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && !isDetailPage && !isLibraryPage && !isCollectionPage && !isSettingsPage;
+  // Loading / initial download state - bypass if viewing the download landing page so users get access instantly
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && !isDetailPage && !isLibraryPage && !isCollectionPage && !isSettingsPage && !isDownloadPage;
 
   if (isInitialLoading) {
     return (
@@ -187,6 +205,8 @@ function App() {
         <CollectionDetailsView collectionId={collectionId} />
       ) : isSettingsPage ? (
         <SettingsView />
+      ) : isDownloadPage ? (
+        <AndroidDownloadView />
       ) : (
         <div className="space-y-6">
 
