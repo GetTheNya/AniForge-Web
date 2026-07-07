@@ -85,8 +85,32 @@ function App() {
     [setFilter],
   );
 
+  const isDetailPage = pathname === '/anime';
+  const isLibraryPage = pathname === '/library';
+  const isCollectionPage = pathname === '/collection';
+  const isSettingsPage = pathname === '/settings';
+  const queryParams = new URLSearchParams(search);
+  const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
+  const collectionId = isCollectionPage ? queryParams.get('id') : null;
+
+  // Calculate transitionKey for page animation
+  const transitionKey = useMemo(() => {
+    if (isDetailPage && animeId) {
+      return `anime-${animeId}`;
+    }
+    if (isCollectionPage && collectionId) {
+      return `collection-${collectionId}`;
+    }
+    return pathname || '/';
+  }, [pathname, animeId, collectionId]);
+
+  // Reset scroll position to top instantly when transitionKey changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [transitionKey]);
+
   // Loading / initial download state
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && pathname !== '/anime' && pathname !== '/library' && pathname !== '/collection' && pathname !== '/settings';
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && !isDetailPage && !isLibraryPage && !isCollectionPage && !isSettingsPage;
 
   if (isInitialLoading) {
     return (
@@ -151,30 +175,6 @@ function App() {
       </Layout>
     );
   }
-
-  const isDetailPage = pathname === '/anime';
-  const isLibraryPage = pathname === '/library';
-  const isCollectionPage = pathname === '/collection';
-  const isSettingsPage = pathname === '/settings';
-  const queryParams = new URLSearchParams(search);
-  const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
-  const collectionId = isCollectionPage ? queryParams.get('id') : null;
-
-  // Calculate transitionKey for page animation
-  const transitionKey = useMemo(() => {
-    if (isDetailPage && animeId) {
-      return `anime-${animeId}`;
-    }
-    if (isCollectionPage && collectionId) {
-      return `collection-${collectionId}`;
-    }
-    return pathname || '/';
-  }, [pathname, animeId, collectionId]);
-
-  // Reset scroll position to top instantly when transitionKey changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [transitionKey]);
 
   return (
     <Layout>
