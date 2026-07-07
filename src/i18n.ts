@@ -59,7 +59,8 @@ const resources = {
         downloadingCatalog: "Downloading Anime Catalog",
         results:"results",
         prevPage: "Previous",
-        nextPage: "Next"
+        nextPage: "Next",
+        goToPage: "Go to page"
       },
       detail: {
         info: "Info",
@@ -290,7 +291,8 @@ const resources = {
         downloadingCatalog: "Завантаження каталогу аніме",
         results:"результатів",
         prevPage: "Назад",
-        nextPage: "Вперед"
+        nextPage: "Вперед",
+        goToPage: "Перейти до сторінки"
       },
       detail: {
         info: "Інфо",

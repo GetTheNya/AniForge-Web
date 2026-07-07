@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface PaginationProps {
@@ -8,12 +9,14 @@ interface PaginationProps {
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   const { t } = useTranslation();
+  const [activeEllipsis, setActiveEllipsis] = useState<'left' | 'right' | null>(null);
+  const [inputValue, setInputValue] = useState('');
 
   if (totalPages <= 1) return null;
 
   // Generate page numbers with ellipses (e.g. 1 ... 4 5 6 ... 12)
   const getPageNumbers = () => {
-    const delta = 1; // number of pages to show around the current page
+    const delta = 3; // number of pages to show around the current page
     const left = currentPage - delta;
     const right = currentPage + delta;
     const range: number[] = [];
@@ -26,12 +29,18 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
       }
     }
 
+    let hasLeftEllipsis = false;
     for (const i of range) {
       if (prevValue !== undefined) {
         if (i - prevValue === 2) {
           rangeWithDots.push(prevValue + 1);
         } else if (i - prevValue > 2) {
-          rangeWithDots.push('...');
+          if (!hasLeftEllipsis && i < currentPage) {
+            rangeWithDots.push('left-ellipsis');
+            hasLeftEllipsis = true;
+          } else {
+            rangeWithDots.push('right-ellipsis');
+          }
         }
       }
       rangeWithDots.push(i);
@@ -39,6 +48,32 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
     }
 
     return rangeWithDots;
+  };
+
+  const handlePageSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const pageNum = parseInt(inputValue, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      onPageChange(pageNum);
+    }
+    setActiveEllipsis(null);
+    setInputValue('');
+  };
+
+  const handleInputBlur = () => {
+    if (inputValue) {
+      handlePageSubmit();
+    } else {
+      setActiveEllipsis(null);
+      setInputValue('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setActiveEllipsis(null);
+      setInputValue('');
+    }
   };
 
   const pageNumbers = getPageNumbers();
@@ -66,14 +101,49 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
       {/* Page Numbers for Desktop Screen */}
       <div className="hidden sm:flex items-center gap-1.5">
         {pageNumbers.map((page, index) => {
-          if (page === '...') {
+          const isLeft = page === 'left-ellipsis';
+          const isRight = page === 'right-ellipsis';
+          const isEllipsis = isLeft || isRight || page === '...';
+
+          if (isEllipsis) {
+            const ellipsisType = isLeft ? 'left' : 'right';
+            const isEditing = activeEllipsis === ellipsisType;
+
+            if (isEditing) {
+              return (
+                <form
+                  key={`ellipsis-input-${index}`}
+                  onSubmit={handlePageSubmit}
+                  className="relative inline-flex items-center"
+                >
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onBlur={handleInputBlur}
+                    onKeyDown={handleKeyDown}
+                    placeholder="..."
+                    autoFocus
+                    className="w-14 h-10 text-center rounded-xl text-sm font-bold bg-[var(--color-bg-card)] border border-[var(--color-accent-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30 focus:border-[var(--color-accent-primary)] select-all transition-all duration-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </form>
+              );
+            }
+
             return (
-              <span
+              <button
                 key={`ellipsis-${index}`}
-                className="w-10 h-10 flex items-center justify-center text-sm font-semibold text-[var(--color-text-tertiary)] select-none"
+                onClick={() => {
+                  setActiveEllipsis(ellipsisType);
+                  setInputValue('');
+                }}
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] hover:border-[var(--color-border-glass-hover)] border border-transparent hover:border transition-all duration-300 cursor-pointer select-none"
+                title={t('catalog.goToPage')}
               >
                 &hellip;
-              </span>
+              </button>
             );
           }
 
