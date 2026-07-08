@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '../hooks/useNavigation';
@@ -15,6 +15,7 @@ import { userDb } from '../services/userDb';
 import { useUserTracking } from '../context/UserTrackingContext';
 import { EMPTY_FILTER } from '../types/filters';
 import { filterToSearchParams } from '../utils/filterUrl';
+import { useRandomSession } from '../context/RandomSessionContext';
 
 interface AnimeDetailViewProps {
   anilistId: number;
@@ -26,6 +27,11 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const { user, signInWithGoogle } = useAuth();
   const { t } = useTranslation();
   const { preferUkTitles } = useSettings();
+  const { session, nextRandom } = useRandomSession();
+
+  const collectionIdParam = useMemo(() => {
+    return new URLSearchParams(window.location.search).get('collectionId');
+  }, [anilistId]);
   const {
     anime,
     screenshots,
@@ -589,12 +595,32 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
 
         {/* Header Action Overlay */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
-          >
-            ← {t('detail.backToCatalog')}
-          </button>
+          <div className="flex items-center gap-3">
+            {collectionIdParam ? (
+              <button
+                onClick={() => navigate('/collection', `?id=${collectionIdParam}`)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
+              >
+                ← Back to Collection
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
+              >
+                ← {t('detail.backToCatalog')}
+              </button>
+            )}
+
+            {session && (
+              <button
+                onClick={() => nextRandom()}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-accent-secondary)]/30 bg-[var(--color-accent-secondary)]/15 text-xs font-bold text-[var(--color-accent-secondary)] hover:bg-[var(--color-accent-secondary)]/25 active:scale-95 transition-all cursor-pointer shadow-lg"
+              >
+                🎲 Next Random ({session.seenIds.length}/{session.filteredIds.length})
+              </button>
+            )}
+          </div>
           
           {user && (
             <button

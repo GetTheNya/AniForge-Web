@@ -15,12 +15,14 @@ interface AnimeCardProps {
   anime: Anime;
   index?: number;
   disableHoverTranslation?: boolean;
+  fromCollectionId?: string | null;
 }
 
 export default function AnimeCard({
   anime,
   index = 0,
   disableHoverTranslation = false,
+  fromCollectionId,
 }: AnimeCardProps) {
   const { navigate } = useNavigation();
   const { preferUkTitles } = useSettings();
@@ -71,7 +73,7 @@ export default function AnimeCard({
         disableHoverTranslation ? '' : 'hover:-translate-y-1'
       }`}
       style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
-      onClick={() => navigate('/anime', `?id=${anime.anilist_id}`)}
+      onClick={() => navigate('/anime', `?id=${anime.anilist_id}${fromCollectionId ? `&collectionId=${fromCollectionId}` : ''}`)}
     >
       {/* Cover image */}
       <div className="relative">
