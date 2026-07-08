@@ -6,6 +6,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDatabase } from '../context/DatabaseContext';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
+import { userDb } from '../services/userDb';
 import { buildSqlFilterQuery } from '../services/queryBuilder';
 import { rowToAnime, type Anime } from '../types/anime';
 import { EMPTY_FILTER, type SearchFilterQuery } from '../types/filters';
@@ -27,21 +29,53 @@ export function useAnimeSearch(
 ): UseAnimeSearchResult {
   const { db, status, queryObjects, execQuery } = useDatabase();
   const { getAnimeTitle } = useSettings();
+  const { user } = useAuth();
   const [results, setResults] = useState<Anime[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryCountRef = useRef(0);
 
-  const runQuery = useCallback(() => {
+  const runQuery = useCallback(async () => {
     if (!db || status !== 'ready') return;
 
+    const currentQueryId = ++queryCountRef.current;
     setIsSearching(true);
     setError(null);
 
     try {
+      let matchingUserListIds: number[] | null = null;
+      let excludedUserListIds: number[] | null = null;
+
+      if (user && (filter.userStatuses.length > 0 || filter.excludedUserStatuses.length > 0)) {
+        const records = await userDb.user_tracking.toArray();
+        const active = records.filter((r) => !r.is_deleted);
+        
+        if (filter.userStatuses.length > 0) {
+          matchingUserListIds = active
+            .filter((r) => filter.userStatuses.includes(r.status))
+            .map((r) => r.anilist_id)
+            .filter((id) => typeof id === 'number' && !isNaN(id));
+        }
+        
+        if (filter.excludedUserStatuses.length > 0) {
+          excludedUserListIds = active
+            .filter((r) => filter.excludedUserStatuses.includes(r.status))
+            .map((r) => r.anilist_id)
+            .filter((id) => typeof id === 'number' && !isNaN(id));
+        }
+      }
+
+      if (currentQueryId !== queryCountRef.current) return;
+
       // Build paginated query
-      const { sql, params } = buildSqlFilterQuery(filter, { limit, offset });
+      const { sql, params } = buildSqlFilterQuery(filter, { 
+        limit, 
+        offset,
+        matchingUserListIds,
+        excludedUserListIds
+      });
       const rows = queryObjects<Record<string, unknown>>(sql, params);
       const animeList = rows.map((row) => {
         const anime = rowToAnime(row);
@@ -50,22 +84,33 @@ export function useAnimeSearch(
           displayTitle: getAnimeTitle(anime),
         };
       });
+
+      if (currentQueryId !== queryCountRef.current) return;
       setResults(animeList);
 
       // Get total count for pagination
-      const { sql: countSql, params: countParams } = buildSqlFilterQuery(filter, { countOnly: true });
+      const { sql: countSql, params: countParams } = buildSqlFilterQuery(filter, { 
+        countOnly: true,
+        matchingUserListIds,
+        excludedUserListIds
+      });
       const countResult = execQuery(countSql, countParams);
+      if (currentQueryId !== queryCountRef.current) return;
       if (countResult.length > 0 && countResult[0].values.length > 0) {
         setTotalCount(countResult[0].values[0][0] as number);
       }
     } catch (e) {
       console.error('[useAnimeSearch] Query error:', e);
-      setError(e instanceof Error ? e.message : 'Query failed');
-      setResults([]);
+      if (currentQueryId === queryCountRef.current) {
+        setError(e instanceof Error ? e.message : 'Query failed');
+        setResults([]);
+      }
     } finally {
-      setIsSearching(false);
+      if (currentQueryId === queryCountRef.current) {
+        setIsSearching(false);
+      }
     }
-  }, [db, status, filter, limit, offset, queryObjects, execQuery, getAnimeTitle]);
+  }, [db, status, filter, limit, offset, queryObjects, execQuery, getAnimeTitle, user]);
 
   const lastTextQueryRef = useRef(filter.textQuery);
 

@@ -18,7 +18,13 @@ interface BuiltQuery {
  */
 export function buildSqlFilterQuery(
   filter: SearchFilterQuery,
-  options?: { limit?: number; offset?: number; countOnly?: boolean },
+  options?: {
+    limit?: number;
+    offset?: number;
+    countOnly?: boolean;
+    matchingUserListIds?: number[] | null;
+    excludedUserListIds?: number[] | null;
+  },
 ): BuiltQuery {
   const { limit, offset, countOnly = false } = options ?? {};
   const params: (string | number)[] = [];
@@ -165,6 +171,20 @@ export function buildSqlFilterQuery(
     const ph = filter.excludedMediaSources.map(() => '?').join(',');
     where.push(`anime.source NOT IN (${ph})`);
     params.push(...filter.excludedMediaSources);
+  }
+
+  // User list status filtering (direct numeric embedding to bypass SQLite 999 parameter limit)
+  if (options?.matchingUserListIds !== undefined && options.matchingUserListIds !== null) {
+    if (options.matchingUserListIds.length > 0) {
+      const idList = options.matchingUserListIds.join(',');
+      where.push(`anime.anilist_id IN (${idList})`);
+    } else {
+      where.push('0 = 1');
+    }
+  }
+  if (options?.excludedUserListIds !== undefined && options.excludedUserListIds !== null && options.excludedUserListIds.length > 0) {
+    const idList = options.excludedUserListIds.join(',');
+    where.push(`anime.anilist_id NOT IN (${idList})`);
   }
 
   // Assemble WHERE clause

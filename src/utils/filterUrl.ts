@@ -68,6 +68,12 @@ export function filterToSearchParams(filter: SearchFilterQuery): URLSearchParams
   if (filter.excludedStaff.length > 0) {
     params.set('exStaff', filter.excludedStaff.join(','));
   }
+  if (filter.userStatuses.length > 0) {
+    params.set('uStatus', filter.userStatuses.join(','));
+  }
+  if (filter.excludedUserStatuses.length > 0) {
+    params.set('exUStatus', filter.excludedUserStatuses.join(','));
+  }
   if (filter.sortBy !== EMPTY_FILTER.sortBy) {
     params.set('sort', filter.sortBy);
   }
@@ -128,6 +134,8 @@ export function searchParamsToFilter(params: URLSearchParams): SearchFilterQuery
     excludedMediaSources: parseStringArray('exSources') as MediaSource[],
     staff: parseNumberArray('staff'),
     excludedStaff: parseNumberArray('exStaff'),
+    userStatuses: parseStringArray('uStatus'),
+    excludedUserStatuses: parseStringArray('exUStatus'),
     sortBy: (params.get('sort') as SortOption) || EMPTY_FILTER.sortBy,
   };
 }

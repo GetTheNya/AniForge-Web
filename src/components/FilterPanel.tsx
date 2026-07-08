@@ -9,6 +9,7 @@ import type { SearchFilterQuery, SortOption, EpisodeGroup } from '../types/filte
 import type { Genre, Tag, Studio } from '../types/anime';
 import { ANIME_FORMATS, ANIME_STATUSES, MEDIA_SOURCES } from '../types/anime';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../context/AuthContext';
 
 interface FilterPanelProps {
   filter: SearchFilterQuery;
@@ -52,6 +53,7 @@ export default function FilterPanel({
 }: FilterPanelProps) {
   const { t } = useTranslation();
   const { preferUkTitles } = useSettings();
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [genreSearch, setGenreSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
@@ -229,6 +231,48 @@ export default function FilterPanel({
             </div>
           </FilterSection>
 
+          {/* User List status chips */}
+          {user && (
+            <FilterSection title={t('filter.userStatus')}>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { value: 'PLANNING', label: t('status.PLANNING') },
+                  { value: 'CURRENT', label: t('status.CURRENT') },
+                  { value: 'COMPLETED', label: t('status.COMPLETED') },
+                  { value: 'PAUSED', label: t('status.PAUSED') },
+                  { value: 'DROPPED', label: t('status.DROPPED') },
+                ].map((us) => {
+                  const isActive = filter.userStatuses.includes(us.value);
+                  const isExcluded = filter.excludedUserStatuses.includes(us.value);
+                  return (
+                    <ToggleChip
+                      key={us.value}
+                      label={us.label}
+                      isActive={isActive}
+                      isExcluded={isExcluded}
+                      onToggle={() => {
+                        if (isExcluded) {
+                          update({
+                            excludedUserStatuses: filter.excludedUserStatuses.filter((s) => s !== us.value),
+                          });
+                        } else if (isActive) {
+                          update({
+                            userStatuses: filter.userStatuses.filter((s) => s !== us.value),
+                            excludedUserStatuses: [...filter.excludedUserStatuses, us.value],
+                          });
+                        } else {
+                          update({
+                            userStatuses: [...filter.userStatuses, us.value],
+                          });
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </FilterSection>
+          )}
+
           {/* Source chips */}
           <FilterSection title={t('filter.source')}>
             <div className="flex flex-wrap gap-1.5">
@@ -394,6 +438,8 @@ export default function FilterPanel({
                   excludedMediaSources: [],
                   staff: [],
                   excludedStaff: [],
+                  userStatuses: [],
+                  excludedUserStatuses: [],
                 })
               }
               className="w-full py-2 text-xs font-medium text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)]/20 rounded-lg transition-colors border border-[var(--color-accent-rose)]/20"
@@ -475,5 +521,7 @@ function countActiveFilters(f: SearchFilterQuery): number {
   if (f.excludedMediaSources.length) count++;
   if (f.staff.length) count++;
   if (f.excludedStaff.length) count++;
+  if (f.userStatuses && f.userStatuses.length) count++;
+  if (f.excludedUserStatuses && f.excludedUserStatuses.length) count++;
   return count;
 }

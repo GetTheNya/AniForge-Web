@@ -185,6 +185,7 @@ const resources = {
         searchStudios: "Search studios...",
         language: "Language",
         hasUkTranslation: "Has Ukrainian translation",
+        userStatus: "In My List",
         clearAll: "Clear All Filters"
       },
       sortOptions: {
@@ -428,6 +429,7 @@ const resources = {
         searchStudios: "Пошук студій...",
         language: "Мова",
         hasUkTranslation: "Має український переклад",
+        userStatus: "У моєму списку",
         clearAll: "Очистити всі фільтри"
       },
       sortOptions: {

@@ -45,6 +45,8 @@ export interface SearchFilterQuery {
   excludedMediaSources: MediaSource[];
   staff: number[];
   excludedStaff: number[];
+  userStatuses: string[];
+  excludedUserStatuses: string[];
   sortBy: SortOption;
 }
 
@@ -69,5 +71,8 @@ export const EMPTY_FILTER: SearchFilterQuery = {
   excludedMediaSources: [],
   staff: [],
   excludedStaff: [],
+  userStatuses: [],
+  excludedUserStatuses: [],
   sortBy: 'SCORE',
 };
+
