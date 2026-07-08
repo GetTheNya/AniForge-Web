@@ -9,6 +9,7 @@ import { useSettings } from '../context/SettingsContext';
 import { rowToAnime, type Anime } from '../types/anime';
 import { STATUS_CONFIGS } from '../utils/statusConfig';
 import StatusBadge from './StatusBadge';
+import AnimeCard from './AnimeCard';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { useUserTracking } from '../context/UserTrackingContext';
@@ -879,41 +880,9 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('detail.recommended')}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {recommendations.slice(0, 8).map((rec) => {
-                  const recCover = rec.cover_large || rec.cover_extra_large;
-                  return (
-                    <div
-                      key={rec.anilist_id}
-                      onClick={() => navigate(`/anime`, `?id=${rec.anilist_id}`)}
-                      className="glass-card group overflow-hidden cursor-pointer"
-                    >
-                      <div className="aspect-[3/4] relative overflow-hidden bg-[var(--color-bg-elevated)]">
-                        {recCover ? (
-                          <img
-                            src={recCover}
-                            alt=""
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">🎬</div>
-                        )}
-                        {rec.score_mal && (
-                          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-[var(--color-bg-overlay)] text-[var(--color-accent-warm)] border border-[var(--color-border-glass)]">
-                            ★ {rec.score_mal.toFixed(1)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-2 flex flex-col gap-1">
-                        <h4 className="text-xs font-bold text-[var(--color-text-primary)] line-clamp-1">
-                          {rec.displayTitle || rec.title_en || rec.title_romaji}
-                        </h4>
-                        <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-semibold">
-                          {rec.format} • {rec.season_year || '?'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                {recommendations.slice(0, 8).map((rec, i) => (
+                  <AnimeCard key={rec.anilist_id} anime={rec} index={i} />
+                ))}
               </div>
             </div>
           )}

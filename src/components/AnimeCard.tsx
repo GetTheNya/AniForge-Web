@@ -14,9 +14,14 @@ import { useTranslation } from 'react-i18next';
 interface AnimeCardProps {
   anime: Anime;
   index?: number;
+  disableHoverTranslation?: boolean;
 }
 
-export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
+export default function AnimeCard({
+  anime,
+  index = 0,
+  disableHoverTranslation = false,
+}: AnimeCardProps) {
   const { navigate } = useNavigation();
   const { preferUkTitles } = useSettings();
   const { t } = useTranslation();
@@ -62,18 +67,21 @@ export default function AnimeCard({ anime, index = 0 }: AnimeCardProps) {
 
   return (
     <div
-      className="glass-card group overflow-hidden animate-scale-in cursor-pointer flex flex-col h-full"
+      className={`group relative rounded-xl bg-neutral-900/80 border border-white/5 border-glass animate-scale-in transition-all duration-300 ease-out hover:border-white/20 flex flex-col transform-gpu ${
+        disableHoverTranslation ? '' : 'hover:-translate-y-1'
+      }`}
       style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
       onClick={() => navigate('/anime', `?id=${anime.anilist_id}`)}
     >
       {/* Cover image */}
-      <div className="relative aspect-[3/4] overflow-hidden">
+      <div className="relative">
         {coverUrl ? (
           <img
             src={coverUrl}
             alt={title}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            decoding='sync'
+            className="w-full aspect-[3/4] object-cover rounded-t-xl transition-opacity duration-300 group-hover:opacity-85"
             style={
               anime.cover_color
                 ? { backgroundColor: anime.cover_color }

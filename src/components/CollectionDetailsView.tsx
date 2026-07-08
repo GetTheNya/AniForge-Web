@@ -133,13 +133,13 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="aspect-[3/4] rounded-2xl skeleton" />
+            <div key={i} className="aspect-[3/4] rounded-xl skeleton" />
           ))}
         </div>
       ) : items.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {items.map((item, i) => (
-            <div key={item.crossRef.animeId} className="relative group/item overflow-hidden rounded-2xl">
+            <div key={item.crossRef.animeId} className="relative group/item overflow-hidden rounded-xl transition-all duration-300 ease-out hover:-translate-y-1 transform-gpu">
               {/* Overlay controls for reordering and deletion on hover */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/75 to-transparent p-2.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-20 flex flex-col gap-1.5">
                 <div className="flex justify-between gap-1">
@@ -181,7 +181,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
 
               {/* Underlying standard AnimeCard or placeholder card */}
               {item.anime ? (
-                <AnimeCard anime={item.anime} index={i} />
+                <AnimeCard anime={item.anime} index={i} disableHoverTranslation={true} />
               ) : (
                 <div className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
                   <span className="text-2xl">❔</span>
