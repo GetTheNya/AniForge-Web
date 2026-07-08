@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '../hooks/useNavigation';
@@ -5,6 +6,7 @@ import { useUserTracking } from '../context/UserTrackingContext';
 import { useCollectionAnime } from '../hooks/useUserCollections';
 import { userDb } from '../services/userDb';
 import AnimeCard from './AnimeCard';
+import Pagination from './Pagination';
 
 interface CollectionDetailsViewProps {
   collectionId: string | null;
@@ -14,6 +16,15 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
   const { navigate } = useNavigation();
   const { t } = useTranslation();
   const { removeCollection, removeAnimeFromCollection, reorderAnimeInCollection } = useUserTracking();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 24;
+
+  // Reset page when collectionId changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [collectionId]);
 
   // 1. Reactive query to fetch collection details from Dexie
   const collection = useLiveQuery(
@@ -28,6 +39,13 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
 
   // 2. Fetch list of anime in this collection reactively (runs WASM SQLite batch join internally)
   const { items, isLoading } = useCollectionAnime(collectionId);
+
+  const totalPages = Math.ceil((items?.length || 0) / itemsPerPage);
+  const safePage = Math.min(currentPage, Math.max(1, totalPages));
+  const startIndex = (safePage - 1) * itemsPerPage;
+  const paginatedItems = useMemo(() => {
+    return items ? items.slice(startIndex, startIndex + itemsPerPage) : [];
+  }, [items, startIndex]);
 
   // Handle reordering sequence
   const moveAnime = async (currentIndex: number, direction: 'left' | 'right') => {
@@ -137,60 +155,70 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
           ))}
         </div>
       ) : items.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {items.map((item, i) => (
-            <div key={item.crossRef.animeId} className="relative group/item overflow-hidden rounded-xl transition-all duration-300 ease-out hover:-translate-y-1 transform-gpu">
-              {/* Overlay controls for reordering and deletion on hover */}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/75 to-transparent p-2.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-20 flex flex-col gap-1.5">
-                <div className="flex justify-between gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveAnime(i, 'left');
-                    }}
-                    disabled={i === 0}
-                    className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
-                    title="Move Left"
-                  >
-                    ← Left
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveAnime(i, 'right');
-                    }}
-                    disabled={i === items.length - 1}
-                    className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
-                    title="Move Right"
-                  >
-                    Right →
-                  </button>
-                </div>
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeAnimeFromCollection(collectionId, item.crossRef.animeId);
-                  }}
-                  className="w-full bg-[var(--color-accent-rose)]/15 border border-[var(--color-accent-rose)]/25 text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)] rounded-lg py-1 cursor-pointer text-[10px] font-black transition-all"
-                  title="Remove from collection"
-                >
-                  Remove Item
-                </button>
-              </div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {paginatedItems.map((item, localIndex) => {
+              const globalIndex = startIndex + localIndex;
+              return (
+                <div key={item.crossRef.animeId} className="relative group/item overflow-hidden rounded-xl transition-all duration-300 ease-out hover:-translate-y-1 transform-gpu">
+                  {/* Overlay controls for reordering and deletion on hover */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/75 to-transparent p-2.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-20 flex flex-col gap-1.5">
+                    <div className="flex justify-between gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveAnime(globalIndex, 'left');
+                        }}
+                        disabled={globalIndex === 0}
+                        className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
+                        title="Move Left"
+                      >
+                        ← Left
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveAnime(globalIndex, 'right');
+                        }}
+                        disabled={globalIndex === items.length - 1}
+                        className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
+                        title="Move Right"
+                      >
+                        Right →
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeAnimeFromCollection(collectionId, item.crossRef.animeId);
+                      }}
+                      className="w-full bg-[var(--color-accent-rose)]/15 border border-[var(--color-accent-rose)]/25 text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)] rounded-lg py-1 cursor-pointer text-[10px] font-black transition-all"
+                      title="Remove from collection"
+                    >
+                      Remove Item
+                    </button>
+                  </div>
 
-              {/* Underlying standard AnimeCard or placeholder card */}
-              {item.anime ? (
-                <AnimeCard anime={item.anime} index={i} disableHoverTranslation={true} />
-              ) : (
-                <div className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
-                  <span className="text-2xl">❔</span>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.crossRef.animeId}</p>
+                  {/* Underlying standard AnimeCard or placeholder card */}
+                  {item.anime ? (
+                    <AnimeCard anime={item.anime} index={localIndex} disableHoverTranslation={true} />
+                  ) : (
+                    <div className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
+                      <span className="text-2xl">❔</span>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
+                      <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.crossRef.animeId}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">

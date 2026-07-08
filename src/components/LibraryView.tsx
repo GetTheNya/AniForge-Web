@@ -10,6 +10,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { useDatabase } from '../context/DatabaseContext';
 import AnimeCard from './AnimeCard';
+import Pagination from './Pagination';
 import { STATUS_COLORS_BG } from '../utils/statusConfig';
 
 export default function LibraryView() {
@@ -23,6 +24,15 @@ export default function LibraryView() {
   
   // Lists sub-tab state (watch status)
   const [activeStatus, setActiveStatus] = useState<string>('CURRENT');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 24;
+
+  // Reset page when tab or watch status changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, activeStatus]);
 
   // Load tracking list (contains tracking + anime object)
   const { trackingList, isLoading: isListsLoading } = useSupabaseLists();
@@ -61,6 +71,14 @@ export default function LibraryView() {
   const filteredTracking = useMemo(() => {
     return trackingList.filter((item) => item.tracking.watch_status === activeStatus);
   }, [trackingList, activeStatus]);
+
+  const totalPages = Math.ceil(filteredTracking.length / itemsPerPage);
+  const safePage = Math.min(currentPage, Math.max(1, totalPages));
+
+  const paginatedTracking = useMemo(() => {
+    const startIndex = (safePage - 1) * itemsPerPage;
+    return filteredTracking.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTracking, safePage]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,18 +199,25 @@ export default function LibraryView() {
               ))}
             </div>
           ) : filteredTracking.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {filteredTracking.map((item, i) => (
-                item.anime ? (
-                  <AnimeCard key={item.tracking.anilist_id} anime={item.anime} index={i} />
-                ) : (
-                  <div key={item.tracking.anilist_id} className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
-                    <span className="text-2xl">❔</span>
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
-                    <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.tracking.anilist_id}</p>
-                  </div>
-                )
-              ))}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {paginatedTracking.map((item, i) => (
+                  item.anime ? (
+                    <AnimeCard key={item.tracking.anilist_id} anime={item.anime} index={i} />
+                  ) : (
+                    <div key={item.tracking.anilist_id} className="glass-card p-4 flex flex-col items-center justify-center text-center aspect-[3/4]">
+                      <span className="text-2xl">❔</span>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-2">{t('library.notInCatalog')}</p>
+                      <p className="text-[10px] text-[var(--color-text-muted)] mt-1">ID: {item.tracking.anilist_id}</p>
+                    </div>
+                  )
+                ))}
+              </div>
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
