@@ -83,7 +83,7 @@ export default function FilterPanel({
   );
 
   return (
-    <div className="glass-card p-4 space-y-4">
+    <div className="glass-card p-4">
       {/* Header with toggle */}
       <div className="flex items-center justify-between">
         <button
@@ -120,8 +120,8 @@ export default function FilterPanel({
         </select>
       </div>
 
-      {isExpanded && isLoaded && (
-        <div className="space-y-5 animate-fade-in">
+      <div className={`filter-expand-wrapper ${isExpanded && isLoaded ? 'expanded mt-4' : ''}`}>
+        <div className="filter-expand-content space-y-5">
           {/* Format chips */}
           <FilterSection title={t('filter.format')}>
             <div className="flex flex-wrap gap-1.5">
@@ -448,7 +448,7 @@ export default function FilterPanel({
             </button>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

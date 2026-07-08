@@ -240,5 +240,24 @@
     /* Telling the browser to prepare a separate layer for the GPU */
     will-change: transform, opacity;
   }
+
+  /* Expandable filter content animation */
+  .filter-expand-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-in-out;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .filter-expand-wrapper.expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .filter-expand-content {
+    min-height: 0;
+  }
 }
+
 
