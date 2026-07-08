@@ -10,6 +10,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
 import { STATUS_COLORS } from '../utils/statusConfig';
 import { useTranslation } from 'react-i18next';
+import { useContextMenu } from '../context/ContextMenuContext';
+import { useRef } from 'react';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -27,7 +29,34 @@ export default function AnimeCard({
   const { navigate } = useNavigation();
   const { preferUkTitles } = useSettings();
   const { t } = useTranslation();
+  const { openContextMenu } = useContextMenu();
   const coverUrl = anime.cover_large || anime.cover_extra_large;
+
+  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches && e.touches[0]) {
+      lastTouchRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let x = e.clientX;
+    let y = e.clientY;
+
+    if (x === 0 && y === 0 && lastTouchRef.current) {
+      x = lastTouchRef.current.x;
+      y = lastTouchRef.current.y;
+    }
+
+    openContextMenu({ x, y }, anime.anilist_id, anime);
+  };
 
   const tracking = useLiveQuery(
     () => userDb.user_tracking.get(anime.anilist_id),
@@ -74,6 +103,8 @@ export default function AnimeCard({
       }`}
       style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
       onClick={() => navigate('/anime', `?id=${anime.anilist_id}${fromCollectionId ? `&collectionId=${fromCollectionId}` : ''}`)}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
     >
       {/* Cover image */}
       <div className="relative">

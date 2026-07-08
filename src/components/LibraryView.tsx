@@ -20,6 +20,11 @@ import { EMPTY_FILTER, type SearchFilterQuery } from '../types/filters';
 import SearchBar from './SearchBar';
 import FilterPanel from './FilterPanel';
 
+const LIBRARY_DEFAULT_FILTER: SearchFilterQuery = {
+  ...EMPTY_FILTER,
+  sortBy: 'LAST_MODIFIED',
+};
+
 export default function LibraryView() {
   const { user, signInWithGoogle } = useAuth();
   const { navigate } = useNavigation();
@@ -41,7 +46,7 @@ export default function LibraryView() {
   const catalogMeta = useCatalogMeta();
 
   // Filter state
-  const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
+  const [filter, setFilter] = useState<SearchFilterQuery>(LIBRARY_DEFAULT_FILTER);
   const [filteredTrackingList, setFilteredTrackingList] = useState<TrackingWithAnime[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
 
@@ -52,7 +57,7 @@ export default function LibraryView() {
 
   // Reset filter when tab or watch status changes
   useEffect(() => {
-    setFilter(EMPTY_FILTER);
+    setFilter(LIBRARY_DEFAULT_FILTER);
   }, [activeTab, activeStatus]);
 
   // Load tracking list (contains tracking + anime object)
@@ -116,7 +121,8 @@ export default function LibraryView() {
     if (filter.staff.length) activeCount++;
     if (filter.excludedStaff.length) activeCount++;
     
-    return filter.textQuery.trim() !== '' || activeCount > 0 || filter.sortBy !== 'SCORE';
+    const isCatalogSort = filter.sortBy !== 'LAST_MODIFIED';
+    return filter.textQuery.trim() !== '' || activeCount > 0 || isCatalogSort;
   }, [filter]);
 
   // Perform SQLite filtering on the status-grouped tracking items
@@ -127,12 +133,25 @@ export default function LibraryView() {
     }
 
     if (!isFiltered) {
-      setFilteredTrackingList(statusTrackingList);
+      const sorted = [...statusTrackingList].sort((a, b) => {
+        const timeA = a.tracking.last_modified ? new Date(a.tracking.last_modified).getTime() : 0;
+        const timeB = b.tracking.last_modified ? new Date(b.tracking.last_modified).getTime() : 0;
+        return timeB - timeA;
+      });
+      setFilteredTrackingList(sorted);
       return;
     }
 
     if (!db || status !== 'ready') {
-      setFilteredTrackingList(statusTrackingList);
+      const sorted = [...statusTrackingList];
+      if (filter.sortBy === 'LAST_MODIFIED') {
+        sorted.sort((a, b) => {
+          const timeA = a.tracking.last_modified ? new Date(a.tracking.last_modified).getTime() : 0;
+          const timeB = b.tracking.last_modified ? new Date(b.tracking.last_modified).getTime() : 0;
+          return timeB - timeA;
+        });
+      }
+      setFilteredTrackingList(sorted);
       return;
     }
 
@@ -175,6 +194,14 @@ export default function LibraryView() {
               anime: anime,
             });
           }
+        }
+
+        if (filter.sortBy === 'LAST_MODIFIED') {
+          result.sort((a, b) => {
+            const timeA = a.tracking.last_modified ? new Date(a.tracking.last_modified).getTime() : 0;
+            const timeB = b.tracking.last_modified ? new Date(b.tracking.last_modified).getTime() : 0;
+            return timeB - timeA;
+          });
         }
 
         setFilteredTrackingList(result);
@@ -319,7 +346,7 @@ export default function LibraryView() {
                   setFilter((prev) => ({
                     ...prev,
                     textQuery: text,
-                    sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'SCORE' : prev.sortBy,
+                    sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'LAST_MODIFIED' : prev.sortBy,
                   }))
                 }
                 resultCount={filteredTrackingList.length}
@@ -334,6 +361,7 @@ export default function LibraryView() {
                 studios={catalogMeta.studios}
                 isLoaded={catalogMeta.isLoaded}
                 hideUserStatusFilters={true}
+                showLastAddedSort={true}
               />
             </div>
           )}

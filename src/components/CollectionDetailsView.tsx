@@ -173,6 +173,14 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
               anime,
             };
           });
+
+          if (filter.sortBy === 'LAST_MODIFIED') {
+            itemsList.sort((a, b) => {
+              const timeA = a.crossRef?.last_modified ?? 0;
+              const timeB = b.crossRef?.last_modified ?? 0;
+              return timeB - timeA;
+            });
+          }
         }
 
         setFilteredItems(itemsList);
@@ -351,6 +359,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             tags={catalogMeta.tags}
             studios={catalogMeta.studios}
             isLoaded={catalogMeta.isLoaded}
+            showLastAddedSort={true}
           />
         </div>
       )}

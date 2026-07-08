@@ -19,6 +19,7 @@ interface FilterPanelProps {
   studios: Studio[];
   isLoaded: boolean;
   hideUserStatusFilters?: boolean;
+  showLastAddedSort?: boolean;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -52,6 +53,7 @@ export default function FilterPanel({
   studios,
   isLoaded,
   hideUserStatusFilters = false,
+  showLastAddedSort = false,
 }: FilterPanelProps) {
   const { t } = useTranslation();
   const { preferUkTitles } = useSettings();
@@ -114,7 +116,10 @@ export default function FilterPanel({
           onChange={(e) => update({ sortBy: e.target.value as SortOption })}
           className="glass-input text-xs py-1.5 px-3 pr-8 cursor-pointer"
         >
-          {SORT_OPTIONS.map((opt) => (
+          {(showLastAddedSort
+            ? [{ value: 'LAST_MODIFIED' as SortOption, label: 'Last Added' }, ...SORT_OPTIONS]
+            : SORT_OPTIONS
+          ).map((opt) => (
             <option key={opt.value} value={opt.value}>
               {t(`sortOptions.${opt.value}`, opt.label)}
             </option>

@@ -8,6 +8,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { NavigationProvider } from './context/NavigationContext';
 import { ToastProvider } from './context/ToastContext';
 import { RandomSessionProvider } from './context/RandomSessionContext';
+import { ContextMenuProvider } from './context/ContextMenuContext';
 import App from './App';
 import './index.css';
 
@@ -20,7 +21,9 @@ createRoot(document.getElementById('root')!).render(
             <NavigationProvider>
               <ToastProvider>
                 <RandomSessionProvider>
-                  <App />
+                  <ContextMenuProvider>
+                    <App />
+                  </ContextMenuProvider>
                 </RandomSessionProvider>
               </ToastProvider>
             </NavigationProvider>

@@ -164,7 +164,8 @@ const resources = {
         signOut: "Sign Out",
         signInGoogle: "Sign in with Google",
         poweredBy: "Powered by SQLite WASM + Supabase",
-        status: "Database status:"
+        status: "Database status:",
+        github: "GitHub"
       },
       filter: {
         title: "Filters",
@@ -189,6 +190,7 @@ const resources = {
         clearAll: "Clear All Filters"
       },
       sortOptions: {
+        LAST_MODIFIED: "Last Added",
         SCORE: "Score ↓",
         SCORE_ASC: "Score ↑",
         POPULARITY: "Popularity ↓",
@@ -408,7 +410,8 @@ const resources = {
         signOut: "Вийти",
         signInGoogle: "Увійти через Google",
         poweredBy: "Працює на SQLite WASM + Supabase",
-        status: "Стан бази даних:"
+        status: "Стан бази даних:",
+        github: "GitHub"
       },
       filter: {
         title: "Фільтри",
@@ -433,6 +436,7 @@ const resources = {
         clearAll: "Очистити всі фільтри"
       },
       sortOptions: {
+        LAST_MODIFIED: "Останні додані",
         SCORE: "Оцінка ↓",
         SCORE_ASC: "Оцінка ↑",
         POPULARITY: "Популярність ↓",

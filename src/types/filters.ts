@@ -22,7 +22,8 @@ export type SortOption =
   | 'START_DATE_DESC'
   | 'START_DATE_ASC'
   | 'EPISODES_DESC'
-  | 'EPISODES_ASC';
+  | 'EPISODES_ASC'
+  | 'LAST_MODIFIED';
 
 export interface SearchFilterQuery {
   textQuery: string;
