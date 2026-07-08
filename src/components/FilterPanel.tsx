@@ -18,6 +18,7 @@ interface FilterPanelProps {
   tags: Tag[];
   studios: Studio[];
   isLoaded: boolean;
+  hideUserStatusFilters?: boolean;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -50,6 +51,7 @@ export default function FilterPanel({
   tags,
   studios,
   isLoaded,
+  hideUserStatusFilters = false,
 }: FilterPanelProps) {
   const { t } = useTranslation();
   const { preferUkTitles } = useSettings();
@@ -59,7 +61,7 @@ export default function FilterPanel({
   const [tagSearch, setTagSearch] = useState('');
   const [studioSearch, setStudioSearch] = useState('');
 
-  const activeFilterCount = countActiveFilters(filter);
+  const activeFilterCount = countActiveFilters(filter, hideUserStatusFilters);
 
 
 
@@ -232,7 +234,7 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* User List status chips */}
-          {user && (
+          {user && !hideUserStatusFilters && (
             <FilterSection title={t('filter.userStatus')}>
               <div className="flex flex-wrap gap-1.5">
                 {[
@@ -500,7 +502,7 @@ function ToggleChip({
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-function countActiveFilters(f: SearchFilterQuery): number {
+function countActiveFilters(f: SearchFilterQuery, hideUserStatusFilters?: boolean): number {
   let count = 0;
   if (f.genres.length) count++;
   if (f.excludedGenres.length) count++;
@@ -521,7 +523,7 @@ function countActiveFilters(f: SearchFilterQuery): number {
   if (f.excludedMediaSources.length) count++;
   if (f.staff.length) count++;
   if (f.excludedStaff.length) count++;
-  if (f.userStatuses && f.userStatuses.length) count++;
-  if (f.excludedUserStatuses && f.excludedUserStatuses.length) count++;
+  if (!hideUserStatusFilters && f.userStatuses && f.userStatuses.length) count++;
+  if (!hideUserStatusFilters && f.excludedUserStatuses && f.excludedUserStatuses.length) count++;
   return count;
 }

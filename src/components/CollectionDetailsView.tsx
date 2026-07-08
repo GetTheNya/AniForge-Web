@@ -342,7 +342,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             }
             resultCount={filteredItems.length}
             isSearching={isFiltering}
-            placeholder="Search anime in this collection by title, description, or ID..."
+            placeholder="Search anime..."
           />
           <FilterPanel
             filter={filter}

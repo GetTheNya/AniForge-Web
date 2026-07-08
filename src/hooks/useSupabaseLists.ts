@@ -12,7 +12,7 @@ import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime } from '../types/anime';
 import type { UserTracking } from '../types/supabase';
 
-interface TrackingWithAnime {
+export interface TrackingWithAnime {
   tracking: UserTracking;
   anime: Anime | null;
 }

@@ -4,7 +4,7 @@ import { useNavigation } from '../hooks/useNavigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useUserTracking } from '../context/UserTrackingContext';
-import { useSupabaseLists } from '../hooks/useSupabaseLists';
+import { useSupabaseLists, type TrackingWithAnime } from '../hooks/useSupabaseLists';
 import { useUserCollections } from '../hooks/useUserCollections';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { userDb } from '../services/userDb';
@@ -12,6 +12,13 @@ import { useDatabase } from '../context/DatabaseContext';
 import AnimeCard from './AnimeCard';
 import Pagination from './Pagination';
 import { STATUS_COLORS_BG } from '../utils/statusConfig';
+import { useSettings } from '../context/SettingsContext';
+import { useCatalogMeta } from '../hooks/useCatalogMeta';
+import { buildSqlFilterQuery } from '../services/queryBuilder';
+import { rowToAnime } from '../types/anime';
+import { EMPTY_FILTER, type SearchFilterQuery } from '../types/filters';
+import SearchBar from './SearchBar';
+import FilterPanel from './FilterPanel';
 
 export default function LibraryView() {
   const { user, signInWithGoogle } = useAuth();
@@ -29,9 +36,23 @@ export default function LibraryView() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 24;
 
-  // Reset page when tab or watch status changes
+  const { db, status, queryObjects } = useDatabase();
+  const { getAnimeTitle } = useSettings();
+  const catalogMeta = useCatalogMeta();
+
+  // Filter state
+  const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
+  const [filteredTrackingList, setFilteredTrackingList] = useState<TrackingWithAnime[]>([]);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Reset page when tab, watch status, or filter changes
   useEffect(() => {
     setCurrentPage(1);
+  }, [activeTab, activeStatus, filter]);
+
+  // Reset filter when tab or watch status changes
+  useEffect(() => {
+    setFilter(EMPTY_FILTER);
   }, [activeTab, activeStatus]);
 
   // Load tracking list (contains tracking + anime object)
@@ -67,18 +88,116 @@ export default function LibraryView() {
     }
   }, [showModal]);
 
-  // Group tracking by watch status
-  const filteredTracking = useMemo(() => {
+  // Group tracking by watch status (base items for filtering)
+  const statusTrackingList = useMemo(() => {
     return trackingList.filter((item) => item.tracking.watch_status === activeStatus);
   }, [trackingList, activeStatus]);
 
-  const totalPages = Math.ceil(filteredTracking.length / itemsPerPage);
+  // Check if filters are active
+  const isFiltered = useMemo(() => {
+    let activeCount = 0;
+    if (filter.genres.length) activeCount++;
+    if (filter.excludedGenres.length) activeCount++;
+    if (filter.studios.length) activeCount++;
+    if (filter.excludedStudios.length) activeCount++;
+    if (filter.tags.length) activeCount++;
+    if (filter.excludedTags.length) activeCount++;
+    if (filter.minScore !== null) activeCount++;
+    if (filter.maxScore !== null) activeCount++;
+    if (filter.episodeGroups.length) activeCount++;
+    if (filter.excludedEpisodeGroups.length) activeCount++;
+    if (filter.formats.length) activeCount++;
+    if (filter.excludedFormats.length) activeCount++;
+    if (filter.hasUkTranslation !== null) activeCount++;
+    if (filter.mediaStatuses.length) activeCount++;
+    if (filter.excludedMediaStatuses.length) activeCount++;
+    if (filter.mediaSources.length) activeCount++;
+    if (filter.excludedMediaSources.length) activeCount++;
+    if (filter.staff.length) activeCount++;
+    if (filter.excludedStaff.length) activeCount++;
+    
+    return filter.textQuery.trim() !== '' || activeCount > 0 || filter.sortBy !== 'SCORE';
+  }, [filter]);
+
+  // Perform SQLite filtering on the status-grouped tracking items
+  useEffect(() => {
+    if (!statusTrackingList || statusTrackingList.length === 0) {
+      setFilteredTrackingList([]);
+      return;
+    }
+
+    if (!isFiltered) {
+      setFilteredTrackingList(statusTrackingList);
+      return;
+    }
+
+    if (!db || status !== 'ready') {
+      setFilteredTrackingList(statusTrackingList);
+      return;
+    }
+
+    setIsFiltering(true);
+    const run = async () => {
+      try {
+        const animeIds = statusTrackingList
+          .map((item) => item.tracking.anilist_id)
+          .filter((id): id is number => typeof id === 'number' && !isNaN(id));
+
+        if (animeIds.length === 0) {
+          setFilteredTrackingList([]);
+          return;
+        }
+
+        const { sql, params } = buildSqlFilterQuery(filter, {
+          matchingUserListIds: animeIds,
+        });
+
+        const rows = queryObjects<Record<string, unknown>>(sql, params);
+        const matchedAnimeList = rows.map((row) => {
+          const anime = rowToAnime(row);
+          anime.displayTitle = getAnimeTitle(anime);
+          return anime;
+        });
+
+        const trackingMap = new Map<number, TrackingWithAnime>();
+        for (const item of statusTrackingList) {
+          if (item.tracking.anilist_id) {
+            trackingMap.set(item.tracking.anilist_id, item);
+          }
+        }
+
+        const result: TrackingWithAnime[] = [];
+        for (const anime of matchedAnimeList) {
+          const matchedItem = trackingMap.get(anime.anilist_id);
+          if (matchedItem) {
+            result.push({
+              tracking: matchedItem.tracking,
+              anime: anime,
+            });
+          }
+        }
+
+        setFilteredTrackingList(result);
+      } catch (err) {
+        console.error('[LibraryView] Error filtering statusTrackingList:', err);
+        setFilteredTrackingList(statusTrackingList);
+      } finally {
+        setIsFiltering(false);
+      }
+    };
+
+    run();
+  }, [db, status, statusTrackingList, filter, isFiltered, queryObjects, getAnimeTitle]);
+
+  const isLoading = isListsLoading || isFiltering;
+
+  const totalPages = Math.ceil(filteredTrackingList.length / itemsPerPage);
   const safePage = Math.min(currentPage, Math.max(1, totalPages));
 
   const paginatedTracking = useMemo(() => {
     const startIndex = (safePage - 1) * itemsPerPage;
-    return filteredTracking.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredTracking, safePage]);
+    return filteredTrackingList.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTrackingList, safePage]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,14 +310,42 @@ export default function LibraryView() {
             })}
           </div>
 
+          {/* Search and Filters */}
+          {statusTrackingList.length > 0 && (
+            <div className="space-y-4 pb-2">
+              <SearchBar
+                value={filter.textQuery}
+                onChange={(text) =>
+                  setFilter((prev) => ({
+                    ...prev,
+                    textQuery: text,
+                    sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'SCORE' : prev.sortBy,
+                  }))
+                }
+                resultCount={filteredTrackingList.length}
+                isSearching={isFiltering}
+                placeholder="Search anime..."
+              />
+              <FilterPanel
+                filter={filter}
+                onChange={setFilter}
+                genres={catalogMeta.genres}
+                tags={catalogMeta.tags}
+                studios={catalogMeta.studios}
+                isLoaded={catalogMeta.isLoaded}
+                hideUserStatusFilters={true}
+              />
+            </div>
+          )}
+
           {/* List Content */}
-          {isListsLoading ? (
+          {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="aspect-[3/4] rounded-xl skeleton" />
               ))}
             </div>
-          ) : filteredTracking.length > 0 ? (
+          ) : filteredTrackingList.length > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {paginatedTracking.map((item, i) => (
@@ -221,14 +368,18 @@ export default function LibraryView() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
-              <span className="text-3xl opacity-30">📚</span>
-              <p className="text-sm text-[var(--color-text-secondary)]">{t('library.noTrackedAnime')}</p>
-              <button
-                onClick={() => navigate('/')}
-                className="text-xs text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
-              >
-                {t('library.goToCatalog')}
-              </button>
+              <span className="text-3xl opacity-30">{isFiltered ? '🎬' : '📚'}</span>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {isFiltered ? 'No anime matches the selected filters.' : t('library.noTrackedAnime')}
+              </p>
+              {!isFiltered && (
+                <button
+                  onClick={() => navigate('/')}
+                  className="text-xs text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
+                >
+                  {t('library.goToCatalog')}
+                </button>
+              )}
             </div>
           )}
         </div>
