@@ -204,6 +204,9 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
       const lastSyncTime = dbCount > 0 ? (localStorage.getItem(syncTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
       const syncStartTime = new Date().toISOString();
 
+      // Query with a 2-minute safety buffer to prevent clock-skew issues
+      const lastSyncTimeQuery = new Date(new Date(lastSyncTime).getTime() - 120000).toISOString();
+
       let page = 0;
       let hasMore = true;
       const fetchedItems: any[] = [];
@@ -217,7 +220,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           .from('user_tracking')
           .select('anilist_id, watch_status, score, episode_progress, notes, last_modified, is_deleted')
           .eq('user_id', user.id)
-          .gt('last_modified', lastSyncTime)
+          .gt('synced_at', lastSyncTimeQuery)
           .range(start, end);
 
         if (error) throw error;
@@ -264,12 +267,22 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           }
         });
       }
-      localStorage.setItem(syncTimeKey, syncStartTime);
+
+      let trackingMaxSyncedAt = lastSyncTime;
+      for (const item of fetchedItems) {
+        if (item.synced_at && item.synced_at > trackingMaxSyncedAt) {
+          trackingMaxSyncedAt = item.synced_at;
+        }
+      }
+      const finalTrackingSyncTime = fetchedItems.length > 0 ? trackingMaxSyncedAt : syncStartTime;
+      localStorage.setItem(syncTimeKey, finalTrackingSyncTime);
 
       // 2. Collections delta sync
       const collectionsTimeKey = `collections_last_synced_${user.id}`;
       const collectionsDbCount = await userDb.collections.count();
       const collectionsLastSync = collectionsDbCount > 0 ? (localStorage.getItem(collectionsTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
+      
+      const collectionsLastSyncQuery = new Date(new Date(collectionsLastSync).getTime() - 120000).toISOString();
 
       let colsPage = 0;
       let colsHasMore = true;
@@ -284,7 +297,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           .from('collections')
           .select('collection_id, title, description, created_at, last_modified, is_deleted')
           .eq('user_id', user.id)
-          .gt('last_modified', collectionsLastSync)
+          .gt('synced_at', collectionsLastSyncQuery)
           .range(start, end);
 
         if (error) throw error;
@@ -338,12 +351,22 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           console.info(`[sync] Saved ${puts.length} collections locally.`);
         }
       }
-      localStorage.setItem(collectionsTimeKey, syncStartTime);
+
+      let colsMaxSyncedAt = collectionsLastSync;
+      for (const item of fetchedCollections) {
+        if (item.synced_at && item.synced_at > colsMaxSyncedAt) {
+          colsMaxSyncedAt = item.synced_at;
+        }
+      }
+      const finalColsSyncTime = fetchedCollections.length > 0 ? colsMaxSyncedAt : syncStartTime;
+      localStorage.setItem(collectionsTimeKey, finalColsSyncTime);
 
       // 3. Cross-refs delta sync
       const crossRefsTimeKey = `cross_ref_last_synced_${user.id}`;
       const crossRefsDbCount = await userDb.collection_anime_cross_ref.count();
       const crossRefsLastSync = crossRefsDbCount > 0 ? (localStorage.getItem(crossRefsTimeKey) || '1969-12-31T23:59:59Z') : '1969-12-31T23:59:59Z';
+      
+      const crossRefsLastSyncQuery = new Date(new Date(crossRefsLastSync).getTime() - 120000).toISOString();
 
       let refsPage = 0;
       let refsHasMore = true;
@@ -358,7 +381,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           .from('collection_anime_cross_ref')
           .select('collection_id, anime_id, order_index, last_modified, is_deleted')
           .eq('user_id', user.id)
-          .gt('last_modified', crossRefsLastSync)
+          .gt('synced_at', crossRefsLastSyncQuery)
           .range(start, end);
 
         if (error) throw error;
@@ -411,9 +434,17 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           console.info(`[sync] Saved ${puts.length} cross-refs locally.`);
         }
       }
-      localStorage.setItem(crossRefsTimeKey, syncStartTime);
 
-      setLastSyncedAt(syncStartTime);
+      let refsMaxSyncedAt = crossRefsLastSync;
+      for (const item of fetchedCrossRefs) {
+        if (item.synced_at && item.synced_at > refsMaxSyncedAt) {
+          refsMaxSyncedAt = item.synced_at;
+        }
+      }
+      const finalRefsSyncTime = fetchedCrossRefs.length > 0 ? refsMaxSyncedAt : syncStartTime;
+      localStorage.setItem(crossRefsTimeKey, finalRefsSyncTime);
+
+      setLastSyncedAt(finalTrackingSyncTime);
       setSyncStatus('idle');
       console.info('[sync] Delta sync completed successfully for all tables.');
     } catch (err) {
