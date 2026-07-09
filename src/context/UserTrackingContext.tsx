@@ -267,15 +267,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           }
         });
       }
-
-      let trackingMaxSyncedAt = lastSyncTime;
-      for (const item of fetchedItems) {
-        if (item.synced_at && item.synced_at > trackingMaxSyncedAt) {
-          trackingMaxSyncedAt = item.synced_at;
-        }
-      }
-      const finalTrackingSyncTime = fetchedItems.length > 0 ? trackingMaxSyncedAt : syncStartTime;
-      localStorage.setItem(syncTimeKey, finalTrackingSyncTime);
+      localStorage.setItem(syncTimeKey, syncStartTime);
 
       // 2. Collections delta sync
       const collectionsTimeKey = `collections_last_synced_${user.id}`;
@@ -351,15 +343,7 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           console.info(`[sync] Saved ${puts.length} collections locally.`);
         }
       }
-
-      let colsMaxSyncedAt = collectionsLastSync;
-      for (const item of fetchedCollections) {
-        if (item.synced_at && item.synced_at > colsMaxSyncedAt) {
-          colsMaxSyncedAt = item.synced_at;
-        }
-      }
-      const finalColsSyncTime = fetchedCollections.length > 0 ? colsMaxSyncedAt : syncStartTime;
-      localStorage.setItem(collectionsTimeKey, finalColsSyncTime);
+      localStorage.setItem(collectionsTimeKey, syncStartTime);
 
       // 3. Cross-refs delta sync
       const crossRefsTimeKey = `cross_ref_last_synced_${user.id}`;
@@ -434,17 +418,9 @@ export function UserTrackingProvider({ children }: { children: ReactNode }) {
           console.info(`[sync] Saved ${puts.length} cross-refs locally.`);
         }
       }
+      localStorage.setItem(crossRefsTimeKey, syncStartTime);
 
-      let refsMaxSyncedAt = crossRefsLastSync;
-      for (const item of fetchedCrossRefs) {
-        if (item.synced_at && item.synced_at > refsMaxSyncedAt) {
-          refsMaxSyncedAt = item.synced_at;
-        }
-      }
-      const finalRefsSyncTime = fetchedCrossRefs.length > 0 ? refsMaxSyncedAt : syncStartTime;
-      localStorage.setItem(crossRefsTimeKey, finalRefsSyncTime);
-
-      setLastSyncedAt(finalTrackingSyncTime);
+      setLastSyncedAt(syncStartTime);
       setSyncStatus('idle');
       console.info('[sync] Delta sync completed successfully for all tables.');
     } catch (err) {
