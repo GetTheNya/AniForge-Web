@@ -21,6 +21,11 @@ interface CollectionDetailsViewProps {
   collectionId: string | null;
 }
 
+const COLLECTION_DEFAULT_FILTER: SearchFilterQuery = {
+  ...EMPTY_FILTER,
+  sortBy: 'LAST_MODIFIED',
+};
+
 export default function CollectionDetailsView({ collectionId }: CollectionDetailsViewProps) {
   const { navigate } = useNavigation();
   const { t } = useTranslation();
@@ -36,14 +41,14 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
   const itemsPerPage = 24;
 
   // Filter state
-  const [filter, setFilter] = useState<SearchFilterQuery>(EMPTY_FILTER);
+  const [filter, setFilter] = useState<SearchFilterQuery>(COLLECTION_DEFAULT_FILTER);
   const [filteredItems, setFilteredItems] = useState<{ crossRef: any; anime: any | null }[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
 
   // Reset page and filters when collectionId changes
   useEffect(() => {
     setCurrentPage(1);
-    setFilter(EMPTY_FILTER);
+    setFilter(COLLECTION_DEFAULT_FILTER);
   }, [collectionId]);
 
   // 1. Observe active cross-references for this collection reactively from Dexie
@@ -88,7 +93,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
     if (filter.userStatuses?.length) activeCount++;
     if (filter.excludedUserStatuses?.length) activeCount++;
     
-    return filter.textQuery.trim() !== '' || activeCount > 0 || filter.sortBy !== 'SCORE';
+    return filter.textQuery.trim() !== '' || activeCount > 0 || filter.sortBy !== 'LAST_MODIFIED';
   }, [filter]);
 
   // 2. Perform SQLite filtering on the collection's items
@@ -156,7 +161,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
 
         let itemsList: { crossRef: any; anime: any | null }[] = [];
 
-        if (filter.sortBy === 'SCORE' && !isFiltered) {
+        if (filter.sortBy === 'LAST_MODIFIED' && !isFiltered) {
           // Default: sort manually by orderIndex
           itemsList = crossRefs
             .filter((ref) => animeMap.has(ref.animeId))
@@ -176,9 +181,9 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
 
           if (filter.sortBy === 'LAST_MODIFIED') {
             itemsList.sort((a, b) => {
-              const timeA = a.crossRef?.last_modified ?? 0;
-              const timeB = b.crossRef?.last_modified ?? 0;
-              return timeB - timeA;
+              const orderA = a.crossRef?.orderIndex ?? 0;
+              const orderB = b.crossRef?.orderIndex ?? 0;
+              return orderA - orderB;
             });
           }
         }
@@ -345,7 +350,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
               setFilter((prev) => ({
                 ...prev,
                 textQuery: text,
-                sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'SCORE' : prev.sortBy,
+                sortBy: text.length > 0 ? 'RELEVANCE' : prev.sortBy === 'RELEVANCE' ? 'LAST_MODIFIED' : prev.sortBy,
               }))
             }
             resultCount={filteredItems.length}
@@ -360,6 +365,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             studios={catalogMeta.studios}
             isLoaded={catalogMeta.isLoaded}
             showLastAddedSort={true}
+            lastAddedSortLabel={t('sortOptions.BY_MY_ORDER', 'By My Order')}
           />
         </div>
       )}

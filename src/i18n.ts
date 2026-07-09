@@ -190,6 +190,7 @@ const resources = {
         clearAll: "Clear All Filters"
       },
       sortOptions: {
+        BY_MY_ORDER: "By My Order",
         LAST_MODIFIED: "Last Added",
         SCORE: "Score ↓",
         SCORE_ASC: "Score ↑",
@@ -436,6 +437,7 @@ const resources = {
         clearAll: "Очистити всі фільтри"
       },
       sortOptions: {
+        BY_MY_ORDER: "За моїм порядком",
         LAST_MODIFIED: "Останні додані",
         SCORE: "Оцінка ↓",
         SCORE_ASC: "Оцінка ↑",
