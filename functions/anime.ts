@@ -53,20 +53,34 @@ export async function onRequest(context) {
       })
       .on('head', {
         element(el) {
-          const metaTags = `
-            <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="${title} — AniForge" />
-            <meta name="twitter:description" content="${description}" />
-            ${cover ? `<meta name="twitter:image" content="${cover}" />` : ''}
-            
-            <meta property="og:title" content="${title} — AniForge" />
-            <meta property="og:description" content="${description}" />
-            ${cover ? `<meta property="og:image" content="${cover}" />` : ''}
-            <meta property="og:type" content="${ogType}" />
-            <meta property="og:url" content="${request.url}" />
-          `;
+          const metaTags = [
+            `<meta name="twitter:card" data-dynamic="true" content="summary_large_image" />`,
+            `<meta name="twitter:title" data-dynamic="true" content="${title} — AniForge" />`,
+            `<meta name="twitter:description" data-dynamic="true" content="${description}" />`,
+            cover ? `<meta name="twitter:image" data-dynamic="true" content="${cover}" />` : '',
+            `<meta property="og:title" data-dynamic="true" content="${title} — AniForge" />`,
+            `<meta property="og:description" data-dynamic="true" content="${description}" />`,
+            cover ? `<meta property="og:image" data-dynamic="true" content="${cover}" />` : '',
+            `<meta property="og:type" data-dynamic="true" content="${ogType}" />`,
+            `<meta property="og:url" data-dynamic="true" content="${request.url}" />`
+          ].filter(Boolean).join('\n');
           
           el.prepend(metaTags, { html: true });
+        },
+      })
+      .on('meta[property="og:title"]:not([data-dynamic])', {
+        element(el) {
+          el.remove();
+        },
+      })
+      .on('meta[property="og:image"]:not([data-dynamic])', {
+        element(el) {
+          el.remove();
+        },
+      })
+      .on('meta[name="description"]:not([data-dynamic])', {
+        element(el) {
+          el.remove();
         },
       })
       .transform(response);
