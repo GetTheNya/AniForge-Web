@@ -51,33 +51,67 @@ export async function onRequest(context) {
           el.setInnerContent(`${title} — AniForge`);
         },
       })
-      .on('head', {
+      .on('meta[property="og:title"]', {
         element(el) {
-          const metaTags = [
-            `<meta property="og:title" content="${title} — AniForge" />`,
-            `<meta property="og:description" content="${description}" />`,
-            cover ? `<meta property="og:image" content="${cover}" />` : '',
-            `<meta property="og:type" content="${ogType}" />`,
-            `<meta property="og:url" content="${request.url}" />`,
-            `<meta name="twitter:card" content="summary_large_image" />`
-          ].filter(Boolean).join('\n');
-          
-          el.prepend(metaTags, { html: true });
+          el.setAttribute('content', `${title} — AniForge`);
         },
       })
-      .on('meta[property="og:title"][content="AniForge — Anime Catalog"]', {
+      .on('meta[property="og:description"]', {
         element(el) {
-          el.remove();
+          el.setAttribute('content', description);
         },
       })
-      .on('meta[property="og:image"][content="/default-preview.png"]', {
+      .on('meta[property="og:image"]', {
         element(el) {
-          el.remove();
+          if (cover) {
+            el.setAttribute('content', cover);
+          } else {
+            el.remove();
+          }
         },
       })
-      .on('meta[name="description"][content*="SQLite WASM"]', {
+      .on('meta[property="og:type"]', {
         element(el) {
-          el.remove();
+          el.setAttribute('content', ogType);
+        },
+      })
+      .on('meta[property="og:url"]', {
+        element(el) {
+          el.setAttribute('content', request.url);
+        },
+      })
+      .on('meta[name="description"]', {
+        element(el) {
+          el.setAttribute('content', description);
+        },
+      })
+      .on('meta[name="twitter:card"]', {
+        element(el) {
+          el.setAttribute('content', 'summary_large_image');
+        },
+      })
+      .on('meta[name="twitter:title"]', {
+        element(el) {
+          el.setAttribute('content', `${title} — AniForge`);
+        },
+      })
+      .on('meta[name="twitter:description"]', {
+        element(el) {
+          el.setAttribute('content', description);
+        },
+      })
+      .on('meta[name="twitter:image"]', {
+        element(el) {
+          if (cover) {
+            el.setAttribute('content', cover);
+          } else {
+            el.remove();
+          }
+        },
+      })
+      .on('meta[name="twitter:url"]', {
+        element(el) {
+          el.setAttribute('content', request.url);
         },
       })
       .transform(response);
