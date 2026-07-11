@@ -54,7 +54,9 @@ export async function onRequest(context) {
       .on('head', {
         element(el) {
           const metaTags = [
+            `<meta property="og:title" content="${title} — AniForge" />`,
             `<meta property="og:description" content="${description}" />`,
+            cover ? `<meta property="og:image" content="${cover}" />` : '',
             `<meta property="og:type" content="${ogType}" />`,
             `<meta property="og:url" content="${request.url}" />`
           ].filter(Boolean).join('\n');
@@ -62,23 +64,19 @@ export async function onRequest(context) {
           el.prepend(metaTags, { html: true });
         },
       })
-      .on('meta[property="og:title"]', {
+      .on('meta[property="og:title"][content="AniForge — Anime Catalog"]', {
         element(el) {
-          el.setAttribute('content', `${title} — AniForge`);
+          el.remove();
         },
       })
-      .on('meta[property="og:image"]', {
+      .on('meta[property="og:image"][content="/default-preview.png"]', {
         element(el) {
-          if (cover) {
-            el.setAttribute('content', cover);
-          } else {
-            el.remove();
-          }
+          el.remove();
         },
       })
-      .on('meta[name="description"]', {
+      .on('meta[name="description"][content*="SQLite WASM"]', {
         element(el) {
-          el.setAttribute('content', description);
+          el.remove();
         },
       })
       .transform(response);
