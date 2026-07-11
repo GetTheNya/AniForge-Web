@@ -51,19 +51,31 @@ export default function SearchBar({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="glass-input w-full py-3.5 pl-12 pr-24 text-base"
+        className="glass-input w-full py-3.5 pl-12 pr-28 text-base"
         autoComplete="off"
         spellCheck={false}
       />
 
-      {/* Result count badge */}
-      {resultCount !== null && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          <span className="text-xs font-medium text-[var(--color-text-secondary)] tabular-nums">
+      {/* Right side controls/badge */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="p-1 rounded-full text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+            title={t('common.clear', 'Clear')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        {resultCount !== null && (
+          <span className="text-xs font-medium text-[var(--color-text-secondary)] tabular-nums whitespace-nowrap">
             {resultCount.toLocaleString()} {t('catalog.results')}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

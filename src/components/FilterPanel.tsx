@@ -72,6 +72,35 @@ export default function FilterPanel({
   const update = (partial: Partial<SearchFilterQuery>) =>
     onChange({ ...filter, ...partial });
 
+  const handleClearAll = () => {
+    onChange({
+      ...filter,
+      genres: [],
+      excludedGenres: [],
+      studios: [],
+      excludedStudios: [],
+      tags: [],
+      excludedTags: [],
+      minScore: null,
+      maxScore: null,
+      episodeGroups: [],
+      excludedEpisodeGroups: [],
+      formats: [],
+      excludedFormats: [],
+      hasUkTranslation: null,
+      mediaStatuses: [],
+      excludedMediaStatuses: [],
+      mediaSources: [],
+      excludedMediaSources: [],
+      staff: [],
+      excludedStaff: [],
+      userStatuses: [],
+      excludedUserStatuses: [],
+      year: null,
+      season: null,
+    });
+  };
+
   const filteredGenres = genres.filter(
     (g) =>
       g.name_en.toLowerCase().includes(genreSearch.toLowerCase()) ||
@@ -89,28 +118,65 @@ export default function FilterPanel({
   );
 
   return (
-    <div className="glass-card p-4">
+    <div
+      className={`glass-card p-4 transition-all duration-300 ${!isExpanded ? 'cursor-pointer' : ''}`}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('select')) return;
+
+        if (!isExpanded) {
+          setIsExpanded(true);
+        } else {
+          // If expanded, only header clicks collapse it
+          if (target.closest('.filter-header')) {
+            setIsExpanded(false);
+          }
+        }
+      }}
+    >
       {/* Header with toggle */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent-primary)] transition-colors"
-        >
-          <svg
-            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className={`filter-header flex items-center justify-between ${isExpanded ? 'cursor-pointer' : ''}`}>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent-primary)] transition-colors cursor-pointer"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-          {t('filter.title')}
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {t('filter.title')}
+            {activeFilterCount > 0 && (
+              <span className="glass-badge bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/30">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
           {activeFilterCount > 0 && (
-            <span className="glass-badge bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/30">
-              {activeFilterCount}
-            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClearAll();
+              }}
+              className="text-xs text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)]/20 px-2 py-1 rounded-md border border-[var(--color-accent-rose)]/20 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-medium"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              {t('filter.clearAll', 'Clear All')}
+            </button>
           )}
-        </button>
+        </div>
 
         {/* Sort selector */}
         <select
@@ -375,13 +441,26 @@ export default function FilterPanel({
 
           {/* Genres with search */}
           <FilterSection title={t('filter.genres', { count: genres.length })}>
-            <input
-              type="text"
-              placeholder={t('filter.searchGenres')}
-              value={genreSearch}
-              onChange={(e) => setGenreSearch(e.target.value)}
-              className="glass-input py-1.5 px-3 w-full text-xs mb-2"
-            />
+            <div className="relative w-full mb-2">
+              <input
+                type="text"
+                placeholder={t('filter.searchGenres')}
+                value={genreSearch}
+                onChange={(e) => setGenreSearch(e.target.value)}
+                className="glass-input py-1.5 pl-3 pr-8 w-full text-xs"
+              />
+              {genreSearch && (
+                <button
+                  type="button"
+                  onClick={() => setGenreSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
               {filteredGenres.slice(0, 30).map((g) => (
                 <ToggleChip
@@ -408,13 +487,26 @@ export default function FilterPanel({
 
           {/* Tags with search */}
           <FilterSection title={t('filter.tags', { count: tags.length })}>
-            <input
-              type="text"
-              placeholder={t('filter.searchTags')}
-              value={tagSearch}
-              onChange={(e) => setTagSearch(e.target.value)}
-              className="glass-input py-1.5 px-3 w-full text-xs mb-2"
-            />
+            <div className="relative w-full mb-2">
+              <input
+                type="text"
+                placeholder={t('filter.searchTags')}
+                value={tagSearch}
+                onChange={(e) => setTagSearch(e.target.value)}
+                className="glass-input py-1.5 pl-3 pr-8 w-full text-xs"
+              />
+              {tagSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTagSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
               {filteredTags.slice(0, 30).map((t) => (
                 <ToggleChip
@@ -441,13 +533,26 @@ export default function FilterPanel({
 
           {/* Studios with search */}
           <FilterSection title={t('filter.studios', { count: studios.length })}>
-            <input
-              type="text"
-              placeholder={t('filter.searchStudios')}
-              value={studioSearch}
-              onChange={(e) => setStudioSearch(e.target.value)}
-              className="glass-input py-1.5 px-3 w-full text-xs mb-2"
-            />
+            <div className="relative w-full mb-2">
+              <input
+                type="text"
+                placeholder={t('filter.searchStudios')}
+                value={studioSearch}
+                onChange={(e) => setStudioSearch(e.target.value)}
+                className="glass-input py-1.5 pl-3 pr-8 w-full text-xs"
+              />
+              {studioSearch && (
+                <button
+                  type="button"
+                  onClick={() => setStudioSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
               {filteredStudios.slice(0, 30).map((s) => (
                 <ToggleChip
@@ -490,34 +595,8 @@ export default function FilterPanel({
           {/* Reset button */}
           {activeFilterCount > 0 && (
             <button
-              onClick={() =>
-                onChange({
-                  ...filter,
-                  genres: [],
-                  excludedGenres: [],
-                  studios: [],
-                  excludedStudios: [],
-                  tags: [],
-                  excludedTags: [],
-                  minScore: null,
-                  maxScore: null,
-                  episodeGroups: [],
-                  excludedEpisodeGroups: [],
-                  formats: [],
-                  excludedFormats: [],
-                  hasUkTranslation: null,
-                  mediaStatuses: [],
-                  excludedMediaStatuses: [],
-                  mediaSources: [],
-                  excludedMediaSources: [],
-                  staff: [],
-                  excludedStaff: [],
-                  userStatuses: [],
-                  excludedUserStatuses: [],
-                  year: null,
-                  season: null,
-                })
-              }
+              type="button"
+              onClick={handleClearAll}
               className="w-full py-2 text-xs font-medium text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)]/20 rounded-lg transition-colors border border-[var(--color-accent-rose)]/20"
             >
               {t('filter.clearAll')}
