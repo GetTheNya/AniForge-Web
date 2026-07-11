@@ -3,8 +3,6 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const animeId = url.searchParams.get('id');
   const userAgent = request.headers.get('user-agent') || '';
-
-  console.log(userAgent);
   
   const isBot = /discordbot|telegrambot|twitterbot|slackbot|facebookexternalhit|whatsapp/i.test(userAgent);
 
@@ -44,21 +42,18 @@ export async function onRequest(context) {
           el.setInnerContent(`${title} — AniForge`);
         },
       })
-      .on('meta[property="og:title"]', {
-        element(el) {
-          el.setAttribute('content', `${title} — Anime Details`);
-        },
-      })
-      .on('meta[property="og:image"]', {
-        element(el) {
-          el.setAttribute('content', cover);
-        },
-      })
       .on('head', {
         element(el) {
+          el.append(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
+          el.append(`<meta property="og:description" content="View details and track anime progress in AniForge Web." />`, { html: true });
+          el.append(`<meta property="og:image" content="${cover}" />`, { html: true });
+          el.append(`<meta property="og:type" content="video.other" />`, { html: true });
+          el.append(`<meta property="og:url" content="${request.url}" />`, { html: true });
+          
           el.append(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
         },
       })
+      .transform(response);
 
   } catch (err) {
     return context.next();
