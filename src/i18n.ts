@@ -183,7 +183,10 @@ const resources = {
         github: "GitHub",
         signedInAs: "Signed in as",
         episodesShort: "ep",
-        loading: "Loading..."
+        loading: "Loading...",
+        noResults: "No items found matching your search.",
+        apply: "Apply",
+        clear: "Clear"
       },
       filter: {
         title: "Filters",
@@ -496,7 +499,10 @@ const resources = {
         github: "GitHub",
         signedInAs: "Увійшли як",
         episodesShort: "сер.",
-        loading: "Завантаження..."
+        loading: "Завантаження...",
+        noResults: "Нічого не знайдено за вашим запитом.",
+        apply: "Застосувати",
+        clear: "Очистити"
       },
       filter: {
         title: "Фільтри",
