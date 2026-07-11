@@ -3,8 +3,12 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const animeId = url.searchParams.get('id');
   const userAgent = request.headers.get('user-agent') || '';
+
+  console.log(userAgent);
   
   const isBot = /discordbot|telegrambot|twitterbot|slackbot|facebookexternalhit|whatsapp/i.test(userAgent);
+
+  console.log(`Is Bot: ${isBot}`)
 
   if (!isBot || !animeId) {
     return context.next(); 
@@ -39,7 +43,7 @@ export async function onRequest(context) {
     const title = media.title.english || media.title.romaji || media.title.native;
     const cover = media.coverImage.large;
 
-    const response = await context.next();
+    const response = await context.next();  
 
     return new HTMLRewriter()
       .on('title', {
@@ -47,20 +51,15 @@ export async function onRequest(context) {
           el.setInnerContent(`${title} — AniForge`);
         },
       })
-      .on('meta[name="description"]', {
-        element(el) {
-          el.setAttribute('content', `View details and track the progress of the anime "${title}" on AniForge Web.`);
-        },
-      })
       .on('head', {
         element(el) {
-          el.append(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
-          el.append(`<meta property="og:description" content="Offline anime catalog, list tracking, and custom collections." />`, { html: true });
-          el.append(`<meta property="og:image" content="${cover}" />`, { html: true });
-          el.append(`<meta property="og:type" content="video.other" />`, { html: true });
-          el.append(`<meta property="og:url" content="${request.url}" />`, { html: true });
+          el.prepend(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
+          el.prepend(`<meta property="og:description" content="Offline anime catalog, list tracking, and custom collections." />`, { html: true });
+          el.prepend(`<meta property="og:image" content="${cover}" />`, { html: true });
+          el.prepend(`<meta property="og:type" content="video.other" />`, { html: true });
+          el.prepend(`<meta property="og:url" content="${request.url}" />`, { html: true });
           
-          el.append(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
+          el.prepend(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
         },
       })
       .transform(response);
