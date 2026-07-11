@@ -34,7 +34,10 @@ export async function onRequest(context) {
     });
 
     if (!aniListRes.ok) {
-        console.log(`not ok`)
+        const errorText = await aniListRes.text();
+  
+        console.log(`❌ AniList API Error! Status: ${aniListRes.status}`);
+        console.log(`❌ Text: ${errorText}`);
         return context.next();
     }
 
