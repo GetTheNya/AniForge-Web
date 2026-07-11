@@ -15,42 +15,34 @@ export async function onRequest(context) {
   }
 
   try {
-    const query = `
-      query ($id: Int) {
-        Media (id: $id, type: ANIME) {
-          title { romaji english native }
-          coverImage { large }
-        }
-      }
-    `;
+    const kitsuUrl = `https://kitsu.io/api/edge/mappings?filter[externalSite]=anilist&filter[externalId]=${animeId}&include=item`;
 
-    const aniListRes = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
+    const kitsuRes = await fetch(kitsuUrl, {
+        headers: {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json',
         'User-Agent': 'AniForgeWebClient/1.0'
-      },
-      body: JSON.stringify({ query, variables: { id: parseInt(animeId) } }),
+        }
     });
 
-    if (!aniListRes.ok) {
-        const errorText = await aniListRes.text();
+    if (!kitsuRes.ok) {
+        const errorText = await kitsuRes.text();
   
-        console.log(`❌ AniList API Error! Status: ${aniListRes.status}`);
+        console.log(`❌ AniList API Error! Status: ${kitsuRes.status}`);
         console.log(`❌ Text: ${errorText}`);
         return context.next();
     }
 
-    const { data } = await aniListRes.json();
-    const media = data?.Media;
+    const json: any = await kitsuRes.json();
+    const animeData = json.included?.[0]?.attributes;
 
-    if (!media) {
-        console.log(`not media`)
+    if (!animeData) {
+        console.log(`❌ Kitsu cant find anime for AniList ID: ${animeId}`);
         return context.next();
     }
 
-    const title = media.title.english || media.title.romaji || media.title.native;
-    const cover = media.coverImage.large;
+    const title = animeData.canonicalTitle || animeData.titles.en || animeData.titles.en_jp;
+    const cover = animeData.posterImage?.large || animeData.posterImage?.original;
 
     const response = await context.next();  
 
