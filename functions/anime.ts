@@ -18,16 +18,16 @@ export async function onRequest(context) {
     const shardNumber = parseInt(animeId) % 100;
     const shardFile = shardNumber.toString().padStart(2, '0');
 
-    const githubUrl = `https://raw.githubusercontent.com/GetTheNya/aniforge-metadata/main/main-info-chunks/${shardFile}.json`;
+    const myBucket = context.env.MY_BUCKET;
 
-    const githubRes = await fetch(githubUrl);
+    const shardObject = await myBucket.get(`main-info-chunks/${shardFile}.json`);
 
-    if (!githubRes.ok) {
-      console.log(`❌ Shard ${shardFile}.json not found on GitHub.`);
+    if (!shardObject) {
+      console.log(`❌ Shard ${shardFile}.json doesnt found.`);
       return context.next();
     }
 
-    const chunk = await githubRes.json();
+    const chunk = await shardObject.json();
     const animeData = chunk[animeId];
 
     if (!animeData) {
