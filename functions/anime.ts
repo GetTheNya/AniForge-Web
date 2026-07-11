@@ -42,6 +42,9 @@ export async function onRequest(context) {
 
     const response = await context.next();  
 
+    const isTelegram = /telegrambot/i.test(userAgent);
+    const ogType = isTelegram ? 'website' : 'video.other';
+
     const rewriter = new HTMLRewriter()
       .on('title', {
         element(el) {
@@ -53,7 +56,7 @@ export async function onRequest(context) {
           el.prepend(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
           el.prepend(`<meta property="og:description" content="${description}" />`, { html: true });
           el.prepend(`<meta property="og:image" content="${cover}" />`, { html: true });
-          el.prepend(`<meta property="og:type" content="video.other" />`, { html: true });
+          el.prepend(`<meta property="og:type" content="${ogType}" />`, { html: true });
           el.prepend(`<meta property="og:url" content="${request.url}" />`, { html: true });
           
           el.prepend(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
