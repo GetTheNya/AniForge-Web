@@ -54,10 +54,6 @@ export async function onRequest(context) {
       .on('head', {
         element(el) {
           const metaTags = [
-            `<meta name="twitter:card" content="summary_large_image" />`,
-            `<meta name="twitter:title" content="${title} — AniForge" />`,
-            `<meta name="twitter:description" content="${description}" />`,
-            cover ? `<meta name="twitter:image" content="${cover}" />` : '',
             `<meta property="og:description" content="${description}" />`,
             `<meta property="og:type" content="${ogType}" />`,
             `<meta property="og:url" content="${request.url}" />`
