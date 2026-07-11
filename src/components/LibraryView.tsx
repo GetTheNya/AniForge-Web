@@ -268,7 +268,7 @@ export default function LibraryView() {
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{t('library.syncTitle')}</h2>
-          <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
+          <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
             {t('library.syncSubtext')}
           </p>
         </div>

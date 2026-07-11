@@ -69,7 +69,7 @@ export default function AndroidDownloadView() {
           <p className="text-xs font-semibold text-[var(--color-accent-secondary)] tracking-wider uppercase">
             {t('download.subtitle')}
           </p>
-          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed max-w-sm pt-2">
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed max-w-sm mx-auto pt-2">
             {t('download.description')}
           </p>
         </div>

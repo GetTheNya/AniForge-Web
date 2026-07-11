@@ -1,6 +1,11 @@
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from 'react-i18next';
 
+const LANGUAGES = [
+  { code: 'en', flagCode: 'us', labelKey: 'settings.english' },
+  { code: 'uk', flagCode: 'ua', labelKey: 'settings.ukrainian' },
+] as const;
+
 export default function SettingsView() {
   const { t } = useTranslation();
   const { language, setLanguage, preferUkTitles, setPreferUkTitles } = useSettings();
@@ -28,26 +33,25 @@ export default function SettingsView() {
             {t('settings.language')}
           </label>
           <div className="flex gap-3">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none ${
-                language === 'en'
-                  ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] shadow-[0_0_12px_rgba(var(--color-accent-primary-rgb),0.25)]'
-                  : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-card-hover)]'
-              }`}
-            >
-              🇺🇸 {t('settings.english')}
-            </button>
-            <button
-              onClick={() => setLanguage('uk')}
-              className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none ${
-                language === 'uk'
-                  ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] shadow-[0_0_12px_rgba(var(--color-accent-primary-rgb),0.25)]'
-                  : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-card-hover)]'
-              }`}
-            >
-              🇺🇦 {t('settings.ukrainian')}
-            </button>
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none flex items-center justify-center gap-2 ${
+                  language === lang.code
+                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] shadow-[0_0_12px_rgba(var(--color-accent-primary-rgb),0.25)]'
+                    : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-card-hover)]'
+                }`}
+              >
+                <img
+                  src={`https://flagcdn.com/${lang.flagCode}.svg`}
+                  className="w-5 h-3.5 rounded-sm object-cover shadow-sm border border-white/10 shrink-0"
+                  alt={`${lang.flagCode} flag`}
+                  loading="lazy"
+                />
+                <span>{t(lang.labelKey)}</span>
+              </button>
+            ))}
           </div>
         </div>
 
