@@ -143,10 +143,10 @@ export default function CustomContextMenu() {
       {/* Anime Title Header */}
       <div className="px-2 py-1 border-b border-[var(--color-border-glass)] mb-1">
         <h4 className="font-bold text-[var(--color-text-primary)] line-clamp-1">
-          {animeData?.title_en || animeData?.title_romaji || 'Anime Menu'}
+          {animeData?.title_en || animeData?.title_romaji || t('contextMenu.title')}
         </h4>
         <p className="text-[10px] text-[var(--color-text-tertiary)] line-clamp-1">
-          {animeData?.format || 'Format'} • {animeData?.season_year || 'Year'}
+          {animeData?.format || t('contextMenu.format')} • {animeData?.season_year || t('contextMenu.year')}
         </p>
       </div>
 
@@ -161,7 +161,7 @@ export default function CustomContextMenu() {
         >
           <div className="flex items-center gap-2">
             <span>📊</span>
-            <span>{t('catalog.status', { defaultValue: 'Watch Status' })}</span>
+            <span>{t('detail.watchStatus')}</span>
           </div>
           <div className="flex items-center gap-1">
             {currentStatusConfig ? (
@@ -169,11 +169,11 @@ export default function CustomContextMenu() {
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white flex items-center gap-1 border border-white/10"
                 style={{ backgroundColor: `${currentStatusConfig.color}90` }}
               >
-                {t(`status.${currentStatusConfig.id}`, { defaultValue: currentStatusConfig.label })}
+                {t(`status.${currentStatusConfig.id}`)}
               </span>
             ) : (
               <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                Not Tracking
+                {t('contextMenu.notTracking')}
               </span>
             )}
             <span className={`text-[10px] transition-transform duration-200 ${isStatusOpen ? 'rotate-90' : ''}`}>▶</span>
@@ -195,7 +195,7 @@ export default function CustomContextMenu() {
                   <span style={{ color: config.color }}>
                     {isActive ? config.activeIcon : config.inactiveIcon}
                   </span>
-                  <span>{t(`status.${config.id}`, { defaultValue: config.label })}</span>
+                  <span>{t(`status.${config.id}`)}</span>
                 </button>
               );
             })}
@@ -207,7 +207,7 @@ export default function CustomContextMenu() {
       <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
         <div className="flex items-center gap-2">
           <span>🎬</span>
-          <span>{t('catalog.progress', { defaultValue: 'Progress' })}</span>
+          <span>{t('contextMenu.progress')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -246,10 +246,10 @@ export default function CustomContextMenu() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span>⭐</span>
-            <span>{t('catalog.score', { defaultValue: 'Score' })}</span>
+            <span>{t('contextMenu.score')}</span>
           </div>
           <span className="text-[10px] font-bold text-[var(--color-accent-warm)]">
-            {currentScore !== null ? `${currentScore}/10` : 'No score'}
+            {currentScore !== null ? `${currentScore}/10` : t('contextMenu.noScore')}
           </span>
         </div>
         <div
@@ -300,7 +300,7 @@ export default function CustomContextMenu() {
         >
           <div className="flex items-center gap-2">
             <span>📁</span>
-            <span>Collections</span>
+            <span>{t('library.customCollections')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {animeCollectionIds && animeCollectionIds.size > 0 && (
@@ -322,16 +322,16 @@ export default function CustomContextMenu() {
             }`}
           >
             <div className="px-2 py-1 border-b border-[var(--color-border-glass)] mb-1 text-[10px] text-[var(--color-text-secondary)] font-bold uppercase tracking-wider">
-              Add to Collection
+              {t('detail.addToCollection')}
             </div>
             {isCollectionsLoading ? (
               <div className="px-2.5 py-2 text-[var(--color-text-tertiary)] text-center animate-pulse">
-                Loading...
+                {t('common.loading')}
               </div>
             ) : collections.length === 0 ? (
               <div className="px-2.5 py-3 text-[var(--color-text-tertiary)] text-center flex flex-col gap-1">
-                <span>No custom collections.</span>
-                <span className="text-[10px] text-[var(--color-text-muted)]">Create collections in the Library tab.</span>
+                <span>{t('contextMenu.noCollections')}</span>
+                <span className="text-[10px] text-[var(--color-text-muted)]">{t('contextMenu.createInLibrary')}</span>
               </div>
             ) : (
               <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
@@ -374,7 +374,7 @@ export default function CustomContextMenu() {
       >
         <div className="flex items-center gap-2">
           <span>🔗</span>
-          <span>Open in New Tab</span>
+          <span>{t('contextMenu.openNewTab')}</span>
         </div>
         <span>↗</span>
       </a>
@@ -386,7 +386,7 @@ export default function CustomContextMenu() {
           className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-[var(--color-accent-rose)]/10 text-[var(--color-accent-rose)] transition-colors text-left font-semibold active:bg-[var(--color-accent-rose)]/20 cursor-pointer"
         >
           <span>🗑️</span>
-          <span>Remove Tracking</span>
+          <span>{t('contextMenu.removeTracking')}</span>
         </button>
       )}
     </div>

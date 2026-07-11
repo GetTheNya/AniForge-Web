@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigation } from '../hooks/useNavigation';
+import { useTranslation } from 'react-i18next';
 import { useToast } from './ToastContext';
 
 interface RandomSession {
@@ -28,6 +29,7 @@ export const useRandomSession = () => {
 export const RandomSessionProvider = ({ children }: { children: ReactNode }) => {
   const { navigate } = useNavigation();
   const { addToast } = useToast();
+  const { t } = useTranslation();
 
   const [session, setSession] = useState<RandomSession | null>(() => {
     try {
@@ -75,7 +77,7 @@ export const RandomSessionProvider = ({ children }: { children: ReactNode }) => 
 
     if (unseen.length === 0) {
       // Finished all items
-      addToast('Random anime has ended!', 'info', 4000);
+      addToast(t('library.randomEnded'), 'info', 4000);
       setSession(null);
       return null;
     }

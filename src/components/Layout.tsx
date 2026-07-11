@@ -289,7 +289,7 @@ export default function Layout({ children }: LayoutProps) {
             ) : user ? (
               <div className="flex flex-col gap-3 px-1">
                 <div className="flex flex-col">
-                  <span className="text-[var(--color-text-tertiary)] text-[10px] font-bold uppercase tracking-wider">{t('common.signedInAs', 'Signed in as')}</span>
+                  <span className="text-[var(--color-text-tertiary)] text-[10px] font-bold uppercase tracking-wider">{t('common.signedInAs')}</span>
                   <span className="text-xs font-bold text-[var(--color-text-primary)] truncate mt-0.5">
                     {profile?.username || user.email?.split('@')[0] || 'User'}
                   </span>

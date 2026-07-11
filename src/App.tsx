@@ -148,10 +148,10 @@ function App() {
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] max-w-md">
               {status === 'downloading'
-                ? `Streaming and decompressing the catalog database... ${Math.round(progress * 100)}%`
+                ? `${t('catalog.streamingDb')} ${Math.round(progress * 100)}%`
                 : status === 'processing'
-                  ? 'Validating database integrity...'
-                  : 'Connecting to the anime catalog engine...'}
+                  ? t('catalog.validatingDb')
+                  : t('catalog.connectingDb')}
             </p>
           </div>
 
@@ -181,7 +181,7 @@ function App() {
           </div>
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('catalog.connectionError')}</h2>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-md text-center">
-            {dbError || 'Failed to initialize the anime catalog database.'}
+            {dbError || t('catalog.failedInitDb')}
           </p>
           <button
             onClick={() => window.location.reload()}

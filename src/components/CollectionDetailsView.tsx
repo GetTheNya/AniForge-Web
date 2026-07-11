@@ -242,7 +242,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
     if (!collectionId) return;
     
     const confirmed = window.confirm(
-      'Are you sure you want to delete this custom collection? All compilation lists inside will be erased.'
+      t('collection.deleteConfirm')
     );
     if (confirmed) {
       await removeCollection(collectionId);
@@ -253,9 +253,9 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
   if (!collectionId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <p className="text-sm text-[var(--color-text-secondary)]">Invalid collection ID.</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">{t('collection.invalidId')}</p>
         <button onClick={() => navigate('/library')} className="glass-button text-xs">
-          Back to Library
+          {t('collection.backToLibrary')}
         </button>
       </div>
     );
@@ -274,7 +274,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-[var(--color-accent-primary)]/20 border-t-[var(--color-accent-primary)] animate-spin" />
-        <p className="text-sm text-[var(--color-text-secondary)]">Loading collection details...</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">{t('collection.loading')}</p>
       </div>
     );
   }
@@ -283,12 +283,12 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
         <div className="text-3xl">📭</div>
-        <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Collection Not Found</h3>
+        <h3 className="text-lg font-bold text-[var(--color-text-primary)]">{t('collection.notFound')}</h3>
         <p className="text-xs text-[var(--color-text-secondary)]">
-          This collection may have been deleted or does not exist.
+          {t('collection.notFoundSubtext')}
         </p>
         <button onClick={() => navigate('/library')} className="glass-button text-xs mt-2">
-          Back to Library
+          {t('collection.backToLibrary')}
         </button>
       </div>
     );
@@ -304,7 +304,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
           onClick={() => navigate('/library')}
           className="text-xs font-semibold text-[var(--color-accent-secondary)] hover:text-white transition-colors cursor-pointer flex items-center gap-1"
         >
-          ← Back to Library
+          ← {t('collection.backToLibrary')}
         </button>
       </div>
 
@@ -318,7 +318,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             {collection.description || 'No description provided.'}
           </p>
           <div className="text-[10px] text-[var(--color-text-tertiary)] pt-1">
-            Created: {new Date(collection.createdAt).toLocaleDateString()} • Items:{' '}
+            {t('collection.created')} {new Date(collection.createdAt).toLocaleDateString()} {t('collection.items')}{' '}
             {isFiltered ? `${filteredItems.length} of ${totalItems}` : totalItems}
           </div>
         </div>
@@ -329,14 +329,14 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             disabled={filteredItems.length === 0}
             className="glass-button bg-[var(--color-accent-primary)]/10 hover:bg-[var(--color-accent-primary)]/20 border border-[var(--color-accent-primary)]/30 disabled:opacity-30 disabled:hover:bg-[var(--color-accent-primary)]/10 disabled:cursor-not-allowed cursor-pointer text-xs font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 transition-all"
           >
-            🎲 Random
+            🎲 {t('library.randomBtn')}
           </button>
 
           <button
             onClick={handleDeleteCollection}
             className="glass-badge hover:bg-[var(--color-accent-rose)]/15 border-[var(--color-border-glass)] text-[var(--color-accent-rose)] hover:text-red-400 cursor-pointer text-xs font-bold py-2 px-4 rounded-xl shrink-0"
           >
-            🗑️ Delete Collection
+            🗑️ {t('collection.deleteBtn')}
           </button>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             }
             resultCount={filteredItems.length}
             isSearching={isFiltering}
-            placeholder="Search anime..."
+            placeholder={t('catalog.searchPlaceholderAnime')}
           />
           <FilterPanel
             filter={filter}
@@ -395,9 +395,9 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                           }}
                           disabled={globalIndex === 0}
                           className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
-                          title="Move Left"
+                          title={t('collection.moveLeftTitle')}
                         >
-                          ← Left
+                          ← {t('collection.moveLeft')}
                         </button>
                         <button
                           onClick={(e) => {
@@ -406,9 +406,9 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                           }}
                           disabled={globalIndex === filteredItems.length - 1}
                           className="flex-1 bg-[var(--color-bg-overlay)] border border-[var(--color-border-glass)] text-white hover:text-[var(--color-accent-secondary)] disabled:opacity-30 disabled:hover:text-white rounded-lg py-1 cursor-pointer text-[10px] font-bold transition-all text-center"
-                          title="Move Right"
+                          title={t('collection.moveRightTitle')}
                         >
-                          Right →
+                          {t('collection.moveRight')} →
                         </button>
                       </div>
                     )}
@@ -419,9 +419,9 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
                         removeAnimeFromCollection(collectionId, item.crossRef.animeId);
                       }}
                       className="w-full bg-[var(--color-accent-rose)]/15 border border-[var(--color-accent-rose)]/25 text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)] rounded-lg py-1 cursor-pointer text-[10px] font-black transition-all"
-                      title="Remove from collection"
+                      title={t('collection.removeItemTitle')}
                     >
-                      Remove Item
+                      {t('collection.removeItem')}
                     </button>
                   </div>
 
@@ -449,14 +449,14 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
         <div className="flex flex-col items-center justify-center py-24 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
           <span className="text-3xl opacity-30">🎬</span>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            {isFiltered ? 'No anime matches the selected filters.' : 'This collection is currently empty.'}
+            {isFiltered ? t('collection.noFilteredResults') : t('collection.empty')}
           </p>
           {!isFiltered && (
             <button
               onClick={() => navigate('/')}
               className="text-xs text-[var(--color-accent-secondary)] hover:underline cursor-pointer font-bold"
             >
-              Browse the Catalog to add anime!
+              {t('collection.browseCatalog')}
             </button>
           )}
         </div>

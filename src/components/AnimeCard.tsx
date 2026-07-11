@@ -184,7 +184,7 @@ export default function AnimeCard({
           )}
           {anime.episodes && (
             <span className="text-xs text-[var(--color-text-tertiary)]">
-              {anime.episodes} ep
+              {anime.episodes} {t('common.episodesShort')}
             </span>
           )}
         </div>

@@ -357,7 +357,7 @@ export default function LibraryView() {
               disabled={filteredTrackingList.length === 0}
               className="glass-button bg-[var(--color-accent-primary)]/10 hover:bg-[var(--color-accent-primary)]/20 border border-[var(--color-accent-primary)]/30 disabled:opacity-30 disabled:hover:bg-[var(--color-accent-primary)]/10 disabled:cursor-not-allowed cursor-pointer text-xs font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 transition-all self-end md:self-auto shrink-0 mb-2 md:mb-0"
             >
-              🎲 Random
+              🎲 {t('library.randomBtn')}
             </button>
           </div>
 
@@ -422,7 +422,7 @@ export default function LibraryView() {
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-[var(--color-border-glass)] rounded-2xl gap-3">
               <span className="text-3xl opacity-30">{isFiltered ? '🎬' : '📚'}</span>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                {isFiltered ? 'No anime matches the selected filters.' : t('library.noTrackedAnime')}
+                {isFiltered ? t('library.noFilteredResults') : t('library.noTrackedAnime')}
               </p>
               {!isFiltered && (
                 <button
@@ -612,7 +612,7 @@ function CollectionCard({ collection }: CollectionCardProps) {
             {collection.title}
           </h3>
           <span className="text-[10px] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20 font-bold px-2 py-0.5 rounded-full shrink-0">
-            {count} {count === 1 ? 'anime' : 'animes'}
+            {t('library.animeCount', { count })}
           </span>
         </div>
         <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">

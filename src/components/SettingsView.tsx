@@ -13,7 +13,7 @@ export default function SettingsView() {
           {t('settings.title')}
         </h2>
         <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-          Configure AniForge application preferences and localization.
+          {t('settings.subtext')}
         </p>
       </div>
 

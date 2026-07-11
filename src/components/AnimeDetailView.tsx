@@ -601,14 +601,14 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 onClick={() => navigate('/collection', `?id=${collectionIdParam}`)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
               >
-                ← Back to Collection
+                ← {t('detail.backToCollection')}
               </button>
             ) : (session && !session.collectionId) ? (
               <button
                 onClick={() => navigate('/library')}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
               >
-                ← Back to Library
+                ← {t('detail.backToLibrary')}
               </button>
             ) : (
               <button
@@ -624,7 +624,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                 onClick={() => nextRandom()}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-accent-secondary)]/30 bg-[var(--color-accent-secondary)]/15 text-xs font-bold text-[var(--color-accent-secondary)] hover:bg-[var(--color-accent-secondary)]/25 active:scale-95 transition-all cursor-pointer shadow-lg"
               >
-                🎲 Next Random ({session.seenIds.length}/{session.filteredIds.length})
+                🎲 {t('detail.nextRandom')} ({session.seenIds.length}/{session.filteredIds.length})
               </button>
             )}
           </div>

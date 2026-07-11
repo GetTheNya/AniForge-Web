@@ -57,7 +57,8 @@ const resources = {
         preferUk: "Prefer Ukrainian Titles",
         preferUkSubtext: "Prioritizes localized Ukrainian title indexing from the database catalog if available.",
         english: "English",
-        ukrainian: "Ukrainian"
+        ukrainian: "Ukrainian",
+        subtext: "Configure AniForge application preferences and localization."
       },
       catalog: {
         searchPlaceholder: "Search...",
@@ -67,10 +68,16 @@ const resources = {
         retry: "Retry",
         initializing: "Initializing AniForge",
         downloadingCatalog: "Downloading Anime Catalog",
-        results:"results",
+        results: "results",
         prevPage: "Previous",
         nextPage: "Next",
-        goToPage: "Go to page"
+        goToPage: "Go to page",
+        searchPlaceholderAnime: "Search anime...",
+        searchPlaceholderDefault: "Search anime by title, description, or ID...",
+        streamingDb: "Streaming and decompressing the catalog database...",
+        validatingDb: "Validating database integrity...",
+        connectingDb: "Connecting to the anime catalog engine...",
+        failedInitDb: "Failed to initialize the anime catalog database."
       },
       detail: {
         info: "Info",
@@ -132,7 +139,10 @@ const resources = {
         maxEpisodes: "max: {{count}}",
         saving: "Saving...",
         unknown: "Unknown",
-        namePlaceholder: "E.g., Summer Favorites"
+        namePlaceholder: "E.g., Summer Favorites",
+        backToCollection: "Back to Collection",
+        backToLibrary: "Back to Library",
+        nextRandom: "Next Random"
       },
       library: {
         title: "My Library",
@@ -158,14 +168,22 @@ const resources = {
         creating: "Creating...",
         noDescription: "No description provided.",
         empty: "Empty",
-        viewDetails: "View details →"
+        viewDetails: "View details →",
+        randomBtn: "Random",
+        randomEnded: "Random anime has ended!",
+        noFilteredResults: "No anime matches the selected filters.",
+        animeCount_one: "{{count}} anime",
+        animeCount_other: "{{count}} animes"
       },
       common: {
         signOut: "Sign Out",
         signInGoogle: "Sign in with Google",
         poweredBy: "Powered by SQLite WASM + Supabase",
         status: "Database status:",
-        github: "GitHub"
+        github: "GitHub",
+        signedInAs: "Signed in as",
+        episodesShort: "ep",
+        loading: "Loading..."
       },
       filter: {
         title: "Filters",
@@ -247,6 +265,39 @@ const resources = {
         COMIC: "Comic",
         MULTIMEDIA_PROJECT: "Multimedia Project",
         PICTURE_BOOK: "Picture Book"
+      },
+      collection: {
+        deleteConfirm: "Are you sure you want to delete this custom collection? All compilation lists inside will be erased.",
+        invalidId: "Invalid collection ID.",
+        backToLibrary: "Back to Library",
+        loading: "Loading collection details...",
+        notFound: "Collection Not Found",
+        notFoundSubtext: "This collection may have been deleted or does not exist.",
+        created: "Created:",
+        items: "• Items:",
+        deleteBtn: "Delete Collection",
+        moveLeft: "Left",
+        moveRight: "Right",
+        moveLeftTitle: "Move Left",
+        moveRightTitle: "Move Right",
+        removeItem: "Remove Item",
+        removeItemTitle: "Remove from collection",
+        noFilteredResults: "No anime matches the selected filters.",
+        empty: "This collection is currently empty.",
+        browseCatalog: "Browse the Catalog to add anime!"
+      },
+      contextMenu: {
+        title: "Anime Menu",
+        format: "Format",
+        year: "Year",
+        progress: "Progress",
+        score: "Score",
+        notTracking: "Not Tracking",
+        noScore: "No score",
+        noCollections: "No custom collections.",
+        createInLibrary: "Create collections in the Library tab.",
+        openNewTab: "Open in New Tab",
+        removeTracking: "Remove Tracking"
       }
     }
   },
@@ -304,7 +355,8 @@ const resources = {
         preferUk: "Пріоритет українських назв",
         preferUkSubtext: "Надавати перевагу україномовним назвам аніме, якщо вони є в базі даних.",
         english: "Англійська",
-        ukrainian: "Українська"
+        ukrainian: "Українська",
+        subtext: "Налаштуйте параметри програми та локалізацію AniForge."
       },
       catalog: {
         searchPlaceholder: "Пошук...",
@@ -314,10 +366,16 @@ const resources = {
         retry: "Повторити",
         initializing: "Ініціалізація AniForge",
         downloadingCatalog: "Завантаження каталогу аніме",
-        results:"результатів",
+        results: "результатів",
         prevPage: "Назад",
         nextPage: "Вперед",
-        goToPage: "Перейти до сторінки"
+        goToPage: "Перейти до сторінки",
+        searchPlaceholderAnime: "Пошук аніме...",
+        searchPlaceholderDefault: "Пошук аніме за назвою, описом або ID...",
+        streamingDb: "Потокове передавання та розпакування бази даних каталогу...",
+        validatingDb: "Перевірка цілісності бази даних...",
+        connectingDb: "Підключення до двигуна каталогу аніме...",
+        failedInitDb: "Не вдалося ініціалізувати базу даних каталогу аніме."
       },
       detail: {
         info: "Інфо",
@@ -379,7 +437,10 @@ const resources = {
         maxEpisodes: "макс: {{count}}",
         saving: "Збереження...",
         unknown: "Невідомо",
-        namePlaceholder: "Наприклад: Улюблене літо"
+        namePlaceholder: "Наприклад: Улюблене літо",
+        backToCollection: "Назад до колекції",
+        backToLibrary: "Назад до бібліотеки",
+        nextRandom: "Наступне випадкове"
       },
       library: {
         title: "Моя бібліотека",
@@ -405,14 +466,24 @@ const resources = {
         creating: "Створення...",
         noDescription: "Опис відсутній.",
         empty: "Порожньо",
-        viewDetails: "Детальніше →"
+        viewDetails: "Детальніше →",
+        randomBtn: "Випадковий",
+        randomEnded: "Випадковий вибір аніме закінчився!",
+        noFilteredResults: "Не знайдено аніме, яке відповідає вибраним фільтрам.",
+        animeCount_one: "{{count}} аніме",
+        animeCount_few: "{{count}} аніме",
+        animeCount_many: "{{count}} аніме",
+        animeCount_other: "{{count}} аніме"
       },
       common: {
         signOut: "Вийти",
         signInGoogle: "Увійти через Google",
         poweredBy: "Працює на SQLite WASM + Supabase",
         status: "Стан бази даних:",
-        github: "GitHub"
+        github: "GitHub",
+        signedInAs: "Увійшли як",
+        episodesShort: "сер.",
+        loading: "Завантаження..."
       },
       filter: {
         title: "Фільтри",
@@ -494,6 +565,39 @@ const resources = {
         COMIC: "Комікс",
         MULTIMEDIA_PROJECT: "Мультимедійний проєкт",
         PICTURE_BOOK: "Книжка з картинками"
+      },
+      collection: {
+        deleteConfirm: "Ви впевнені, що хочете видалити цю власну колекцію? Усі списки компіляцій у ній будуть стерті.",
+        invalidId: "Недійсний ID колекції.",
+        backToLibrary: "Назад до бібліотеки",
+        loading: "Завантаження деталей колекції...",
+        notFound: "Колекцію не знайдено",
+        notFoundSubtext: "Ця колекція могла бути видалена або не існує.",
+        created: "Створено:",
+        items: "• Елементів:",
+        deleteBtn: "Видалити колекцію",
+        moveLeft: "Вліво",
+        moveRight: "Вправо",
+        moveLeftTitle: "Перемістити вліво",
+        moveRightTitle: "Перемістити вправо",
+        removeItem: "Видалити елемент",
+        removeItemTitle: "Видалити з колекції",
+        noFilteredResults: "Не знайдено аніме, яке відповідає вибраним фільтрам.",
+        empty: "Ця колекція наразі порожня.",
+        browseCatalog: "Перегляньте каталог, щоб додати аніме!"
+      },
+      contextMenu: {
+        title: "Меню аніме",
+        format: "Формат",
+        year: "Рік",
+        progress: "Прогрес",
+        score: "Оцінка",
+        notTracking: "Не відстежується",
+        noScore: "Без оцінки",
+        noCollections: "Немає власних колекцій.",
+        createInLibrary: "Створюйте колекції у вкладці «Бібліотека».",
+        openNewTab: "Відкрити в новій вкладці",
+        removeTracking: "Видалити відстеження"
       }
     }
   }
