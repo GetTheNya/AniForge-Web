@@ -55,6 +55,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showAllTags, setShowAllTags] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [hoveredStatusId, setHoveredStatusId] = useState<string | null>(null);
 
   // Transition states for Lightbox Portal
   const [lightboxRendered, setLightboxRendered] = useState(false);
@@ -373,10 +374,20 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
               {STATUS_CONFIGS.map((status) => {
                 const isActive = tracking?.watch_status === status.id;
+                const isHovered = hoveredStatusId === status.id;
                 
                 return (
                   <button
                     key={status.id}
+                    onMouseEnter={() => setHoveredStatusId(status.id)}
+                    onMouseLeave={() => setHoveredStatusId(null)}
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+                      e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+                    }}
                     onClick={async () => {
                       try {
                         if (isActive) {
@@ -388,16 +399,33 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                         console.error('[WatchStatusButton] Update tracking failed:', e);
                       }
                     }}
-                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer select-none"
+                    className="relative overflow-hidden flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 ease-out cursor-pointer select-none"
                     style={{
-                      borderColor: isActive ? status.color : 'var(--color-border-glass)',
+                      borderColor: isActive 
+                        ? status.color 
+                        : (isHovered ? 'var(--color-border-glass-hover)' : 'var(--color-border-glass)'),
                       backgroundColor: isActive ? `${status.color}25` : 'var(--color-bg-input)',
-                      color: isActive ? status.color : 'var(--color-text-secondary)',
-                      boxShadow: isActive ? `0 0 12px ${status.color}30` : 'none',
+                      color: isActive ? status.color : (isHovered ? status.color : 'var(--color-text-secondary)'),
+                      boxShadow: isActive 
+                        ? `0 0 12px ${status.color}30` 
+                        : (isHovered ? `0 4px 12px oklch(0 0 0 / 0.15)` : 'none'),
+                      transform: isHovered ? 'scale(1.02) translateY(-1px)' : 'none',
                     }}
                   >
-                    {isActive ? status.activeIcon : status.inactiveIcon}
-                    <span>{t(`status.${status.id}`)}</span>
+                    {/* Radial hover spotlight blob */}
+                    <span 
+                      className="absolute inset-0 pointer-events-none transition-opacity duration-500 ease-out"
+                      style={{
+                        opacity: (!isActive && isHovered) ? 1 : 0,
+                        background: `radial-gradient(circle 75px at var(--mouse-x, 0px) var(--mouse-y, 0px), ${status.color}35, transparent 90%)`,
+                      }}
+                    />
+
+                    {/* Content */}
+                    <span className="relative z-10 flex items-center gap-2">
+                      {isActive ? status.activeIcon : status.inactiveIcon}
+                      <span>{t(`status.${status.id}`)}</span>
+                    </span>
                   </button>
                 );
               })}
@@ -639,9 +667,25 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           {user && (
             <button
               onClick={() => setShowCollectionModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 text-xs font-semibold text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20 transition-all cursor-pointer shadow-lg"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+              }}
+              className="relative overflow-hidden flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/10 text-xs font-semibold text-[var(--color-accent-primary)] hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--color-accent-primary)]/10 transition-all duration-300 ease-out active:scale-95 cursor-pointer shadow-lg group"
             >
-              📥 {t('detail.addToCollection')}
+              {/* Spotlight radial blob */}
+              <span 
+                className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                style={{
+                  background: `radial-gradient(circle 75px at var(--mouse-x, 0px) var(--mouse-y, 0px), var(--color-accent-primary)30, transparent 90%)`,
+                }}
+              />
+              <span className="relative z-10 flex items-center gap-2">
+                📥 {t('detail.addToCollection')}
+              </span>
             </button>
           )}
         </div>
