@@ -365,6 +365,7 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
             genres={catalogMeta.genres}
             tags={catalogMeta.tags}
             studios={catalogMeta.studios}
+            staff={catalogMeta.staff}
             isLoaded={catalogMeta.isLoaded}
             showLastAddedSort={true}
             lastAddedSortLabel={t('sortOptions.BY_MY_ORDER', 'By My Order')}

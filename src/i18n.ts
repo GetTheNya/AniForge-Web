@@ -210,7 +210,15 @@ const resources = {
         anyYear: "Any Year",
         clearYear: "Clear",
         season: "Season",
-        currentSeason: "Current Season"
+        currentSeason: "Current Season",
+        searchStaff: "Search staff...",
+        explore: "Explore All",
+        viewAll: "View All →",
+        explorePortal: "Explore Database Items",
+        explorePortalDesc: "Browse and select tags, studios, or staff members to filter your feed.",
+        tagsLabel: "Tags",
+        studiosLabel: "Studios",
+        portalTip: "Click item to Include (+) → Exclude (−) → Remove."
       },
       sortOptions: {
         BY_MY_ORDER: "By My Order",
@@ -515,7 +523,15 @@ const resources = {
         anyYear: "Будь-який рік",
         clearYear: "Очистити",
         season: "Сезон",
-        currentSeason: "Поточний сезон"
+        currentSeason: "Поточний сезон",
+        searchStaff: "Пошук персоналу...",
+        explore: "Оглянути все",
+        viewAll: "Переглянути все →",
+        explorePortal: "Огляд елементів бази даних",
+        explorePortalDesc: "Переглядайте та вибирайте теги, студії або персонал для фільтрації стрічки.",
+        tagsLabel: "Теги",
+        studiosLabel: "Студії",
+        portalTip: "Натисніть на елемент, щоб Додати (+) → Виключити (−) → Видалити."
       },
       sortOptions: {
         BY_MY_ORDER: "За моїм порядком",

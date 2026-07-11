@@ -145,6 +145,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
       tags: [tagId],
     });
   };
+
+  const filterByStaff = (staffId: number) => {
+    navigateToFilterAndScroll({
+      ...EMPTY_FILTER,
+      staff: [staffId],
+    });
+  };
   
   // Tracking form states
   const [localNotes, setLocalNotes] = useState('');
@@ -848,14 +855,16 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                   {staff.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                       {staff.map((st) => (
-                        <div
+                        <button
                           key={`${st.staff_id}-${st.role}`}
-                          className="flex items-center gap-3 p-2 rounded-lg border border-[var(--color-border-glass)] bg-[var(--color-bg-elevated)]/10"
+                          type="button"
+                          onClick={() => filterByStaff(st.staff_id)}
+                          className="flex items-center gap-3 p-2 rounded-lg border border-[var(--color-border-glass)] bg-[var(--color-bg-elevated)]/10 hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/5 transition-all text-left w-full cursor-pointer"
                         >
                           {st.image_large ? (
                             <img src={st.image_large} alt={st.full_name} className="w-10 h-10 object-cover rounded-full flex-shrink-0 border border-[var(--color-border-glass)]" />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-[var(--color-bg-card)] flex items-center justify-center text-xs flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-[var(--color-bg-card)] border border-[var(--color-border-glass)] flex items-center justify-center text-xs flex-shrink-0">
                               👤
                             </div>
                           )}
@@ -863,7 +872,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
                             <h4 className="text-xs font-bold text-[var(--color-text-primary)] truncate">{st.full_name}</h4>
                             <p className="text-[10px] text-[var(--color-text-tertiary)] truncate">{st.role}</p>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ) : (

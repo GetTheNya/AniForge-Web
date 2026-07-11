@@ -225,6 +225,7 @@ function App() {
               genres={catalogMeta.genres}
               tags={catalogMeta.tags}
               studios={catalogMeta.studios}
+              staff={catalogMeta.staff}
               isLoaded={catalogMeta.isLoaded}
             />
           </div>

@@ -6,10 +6,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchFilterQuery, SortOption, EpisodeGroup } from '../types/filters';
-import type { Genre, Tag, Studio, AnimeSeason } from '../types/anime';
+import type { Genre, Tag, Studio, AnimeSeason, Staff } from '../types/anime';
 import { ANIME_FORMATS, ANIME_STATUSES, MEDIA_SOURCES } from '../types/anime';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import MetadataPortal from './MetadataPortal';
 
 interface FilterPanelProps {
   filter: SearchFilterQuery;
@@ -17,6 +18,7 @@ interface FilterPanelProps {
   genres: Genre[];
   tags: Tag[];
   studios: Studio[];
+  staff: Staff[];
   isLoaded: boolean;
   hideUserStatusFilters?: boolean;
   showLastAddedSort?: boolean;
@@ -52,6 +54,7 @@ export default function FilterPanel({
   genres,
   tags,
   studios,
+  staff,
   isLoaded,
   hideUserStatusFilters = false,
   showLastAddedSort = false,
@@ -64,6 +67,9 @@ export default function FilterPanel({
   const [genreSearch, setGenreSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
   const [studioSearch, setStudioSearch] = useState('');
+  const [staffSearch, setStaffSearch] = useState('');
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
+  const [portalTab, setPortalTab] = useState<'tags' | 'studios' | 'staff'>('tags');
 
   const activeFilterCount = countActiveFilters(filter, hideUserStatusFilters);
 
@@ -116,6 +122,34 @@ export default function FilterPanel({
   const filteredStudios = studios.filter((s) =>
     s.name.toLowerCase().includes(studioSearch.toLowerCase()),
   );
+
+  const filteredStaff = staff.filter((s) =>
+    s.full_name.toLowerCase().includes(staffSearch.toLowerCase()),
+  );
+
+  const sortedTags = [...filteredTags].sort((a, b) => {
+    const aSel = filter.tags.includes(a.tag_id) || filter.excludedTags.includes(a.tag_id);
+    const bSel = filter.tags.includes(b.tag_id) || filter.excludedTags.includes(b.tag_id);
+    if (aSel && !bSel) return -1;
+    if (!aSel && bSel) return 1;
+    return 0;
+  });
+
+  const sortedStudios = [...filteredStudios].sort((a, b) => {
+    const aSel = filter.studios.includes(a.studio_id) || filter.excludedStudios.includes(a.studio_id);
+    const bSel = filter.studios.includes(b.studio_id) || filter.excludedStudios.includes(b.studio_id);
+    if (aSel && !bSel) return -1;
+    if (!aSel && bSel) return 1;
+    return 0;
+  });
+
+  const sortedStaff = [...filteredStaff].sort((a, b) => {
+    const aSel = filter.staff.includes(a.staff_id) || filter.excludedStaff.includes(a.staff_id);
+    const bSel = filter.staff.includes(b.staff_id) || filter.excludedStaff.includes(b.staff_id);
+    if (aSel && !bSel) return -1;
+    if (!aSel && bSel) return 1;
+    return 0;
+  });
 
   return (
     <div
@@ -486,7 +520,22 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Tags with search */}
-          <FilterSection title={t('filter.tags', { count: tags.length })}>
+          <FilterSection
+            title={t('filter.tags', { count: tags.length })}
+            action={
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPortalTab('tags');
+                  setIsPortalOpen(true);
+                }}
+                className="text-[10px] text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
+              >
+                {t('filter.viewAll', 'View All →')}
+              </button>
+            }
+          >
             <div className="relative w-full mb-2">
               <input
                 type="text"
@@ -508,7 +557,7 @@ export default function FilterPanel({
               )}
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-              {filteredTags.slice(0, 30).map((t) => (
+              {sortedTags.slice(0, 30).map((t) => (
                 <ToggleChip
                   key={t.tag_id}
                   label={preferUkTitles ? (t.name_uk || t.name_en) : t.name_en}
@@ -532,7 +581,22 @@ export default function FilterPanel({
           </FilterSection>
 
           {/* Studios with search */}
-          <FilterSection title={t('filter.studios', { count: studios.length })}>
+          <FilterSection
+            title={t('filter.studios', { count: studios.length })}
+            action={
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPortalTab('studios');
+                  setIsPortalOpen(true);
+                }}
+                className="text-[10px] text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
+              >
+                {t('filter.viewAll', 'View All →')}
+              </button>
+            }
+          >
             <div className="relative w-full mb-2">
               <input
                 type="text"
@@ -554,7 +618,7 @@ export default function FilterPanel({
               )}
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-              {filteredStudios.slice(0, 30).map((s) => (
+              {sortedStudios.slice(0, 30).map((s) => (
                 <ToggleChip
                   key={s.studio_id}
                   label={s.name}
@@ -570,6 +634,67 @@ export default function FilterPanel({
                       });
                     } else {
                       update({ studios: [...filter.studios, s.studio_id] });
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          </FilterSection>
+
+          {/* Staff with search */}
+          <FilterSection
+            title={t('staff', 'Staff')}
+            action={
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPortalTab('staff');
+                  setIsPortalOpen(true);
+                }}
+                className="text-[10px] text-[var(--color-accent-primary)] hover:underline cursor-pointer font-bold"
+              >
+                {t('filter.viewAll', 'View All →')}
+              </button>
+            }
+          >
+            <div className="relative w-full mb-2">
+              <input
+                type="text"
+                placeholder={t('filter.searchStaff', 'Search staff...')}
+                value={staffSearch}
+                onChange={(e) => setStaffSearch(e.target.value)}
+                className="glass-input py-1.5 pl-3 pr-8 w-full text-xs"
+              />
+              {staffSearch && (
+                <button
+                  type="button"
+                  onClick={() => setStaffSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+              {sortedStaff.slice(0, 30).map((s) => (
+                <ToggleChip
+                  key={s.staff_id}
+                  label={s.full_name}
+                  isActive={filter.staff.includes(s.staff_id)}
+                  isExcluded={filter.excludedStaff.includes(s.staff_id)}
+                  onToggle={() => {
+                    if (filter.excludedStaff.includes(s.staff_id)) {
+                      update({ excludedStaff: filter.excludedStaff.filter((id) => id !== s.staff_id) });
+                    } else if (filter.staff.includes(s.staff_id)) {
+                      update({
+                        staff: filter.staff.filter((id) => id !== s.staff_id),
+                        excludedStaff: [...filter.excludedStaff, s.staff_id],
+                      });
+                    } else {
+                      update({ staff: [...filter.staff, s.staff_id] });
                     }
                   }}
                 />
@@ -604,18 +729,40 @@ export default function FilterPanel({
           )}
         </div>
       </div>
+
+      <MetadataPortal
+        isOpen={isPortalOpen}
+        onClose={() => setIsPortalOpen(false)}
+        initialTab={portalTab}
+        tags={tags}
+        studios={studios}
+        staff={staff}
+        filter={filter}
+        onChange={onChange}
+      />
     </div>
   );
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────────
 
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+function FilterSection({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-        {title}
-      </h4>
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
+          {title}
+        </h4>
+        {action}
+      </div>
       {children}
     </div>
   );

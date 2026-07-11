@@ -385,6 +385,7 @@ export default function LibraryView() {
                 genres={catalogMeta.genres}
                 tags={catalogMeta.tags}
                 studios={catalogMeta.studios}
+                staff={catalogMeta.staff}
                 isLoaded={catalogMeta.isLoaded}
                 hideUserStatusFilters={true}
                 showLastAddedSort={true}
