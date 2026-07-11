@@ -22,9 +22,14 @@ export async function onRequest(context) {
 
     const aniListRes = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'User-Agent': 'AniForgeWebClient/1.0'
+      },
       body: JSON.stringify({ query, variables: { id: parseInt(animeId) } }),
     });
+
+    if (!aniListRes.ok) return context.next();
 
     const { data } = await aniListRes.json();
     const media = data?.Media;
@@ -42,10 +47,15 @@ export async function onRequest(context) {
           el.setInnerContent(`${title} — AniForge`);
         },
       })
+      .on('meta[name="description"]', {
+        element(el) {
+          el.setAttribute('content', `View details and track the progress of the anime "${title}" on AniForge Web.`);
+        },
+      })
       .on('head', {
         element(el) {
           el.append(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
-          el.append(`<meta property="og:description" content="View details and track anime progress in AniForge Web." />`, { html: true });
+          el.append(`<meta property="og:description" content="Offline anime catalog, list tracking, and custom collections." />`, { html: true });
           el.append(`<meta property="og:image" content="${cover}" />`, { html: true });
           el.append(`<meta property="og:type" content="video.other" />`, { html: true });
           el.append(`<meta property="og:url" content="${request.url}" />`, { html: true });
