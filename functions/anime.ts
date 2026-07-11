@@ -14,6 +14,22 @@ export async function onRequest(context) {
     return context.next(); 
   }
 
+  const isTelegram = /telegrambot/i.test(userAgent);
+  const cacheUrl = new URL(request.url);
+  cacheUrl.searchParams.set('__bot_type', isTelegram ? 'telegram' : 'other');
+  const cacheKey = new Request(cacheUrl.toString(), request);
+  const cache = caches.default;
+
+  try {
+    const cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      console.log(`⚡ Served preview from cache for ID: ${animeId}`);
+      return cachedResponse;
+    }
+  } catch (cacheErr) {
+    console.log(`Cache match error: ${cacheErr}`);
+  }
+
   try {
     const shardNumber = parseInt(animeId) % 100;
     const shardFile = shardNumber.toString().padStart(2, '0');
@@ -116,7 +132,27 @@ export async function onRequest(context) {
       })
       .transform(response);
 
-      return rewriter;
+      const responseText = await rewriter.text();
+      const finalResponse = new Response(responseText, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          'content-type': 'text/html;charset=UTF-8',
+          'cache-control': 'public, max-age=86400'
+        }
+      });
+
+      try {
+        if (context.waitUntil) {
+          context.waitUntil(cache.put(cacheKey, finalResponse.clone()));
+        } else {
+          await cache.put(cacheKey, finalResponse.clone());
+        }
+      } catch (cacheErr) {
+        console.log(`Cache put error: ${cacheErr}`);
+      }
+
+      return finalResponse;
 
   } catch (err) {
     console.log(`err: ${err}`)
