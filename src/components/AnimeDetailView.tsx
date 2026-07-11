@@ -710,7 +710,7 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
           {/* Core Info */}
           <div className="min-w-0 flex-1 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              {anime.score_mal && (
+              {anime.score_mal !== null && anime.score_mal > 0 && (
                 <div className="flex items-center gap-1 glass-badge bg-[var(--color-bg-overlay)] border-[var(--color-border-glass)]">
                   <span className="text-[var(--color-accent-warm)] text-xs">★</span>
                   <span className="text-[var(--color-text-primary)] font-bold">{anime.score_mal.toFixed(1)}</span>
