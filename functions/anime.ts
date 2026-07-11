@@ -58,7 +58,8 @@ export async function onRequest(context) {
             `<meta property="og:description" content="${description}" />`,
             cover ? `<meta property="og:image" content="${cover}" />` : '',
             `<meta property="og:type" content="${ogType}" />`,
-            `<meta property="og:url" content="${request.url}" />`
+            `<meta property="og:url" content="${request.url}" />`,
+            `<meta name="twitter:card" content="summary_large_image" />`
           ].filter(Boolean).join('\n');
           
           el.prepend(metaTags, { html: true });
