@@ -38,6 +38,8 @@ export async function onRequest(context) {
     const title = animeData.title;
     const cover = animeData.cover_large;
 
+    const description = `⭐ Rating: ${animeData.rating || 'N/A'} | 🎬 Format: ${animeData.type || 'N/A'} (${animeData.episodes || 'N/A'} ep.) \nView details and track progress in AniForge Web..`;
+
     const response = await context.next();  
 
     const rewriter = new HTMLRewriter()
@@ -49,7 +51,7 @@ export async function onRequest(context) {
       .on('head', {
         element(el) {
           el.prepend(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
-          el.prepend(`<meta property="og:description" content="Offline anime catalog, list tracking, and custom collections." />`, { html: true });
+          el.prepend(`<meta property="og:description" content="${description}" />`, { html: true });
           el.prepend(`<meta property="og:image" content="${cover}" />`, { html: true });
           el.prepend(`<meta property="og:type" content="video.other" />`, { html: true });
           el.prepend(`<meta property="og:url" content="${request.url}" />`, { html: true });
