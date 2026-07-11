@@ -15,34 +15,28 @@ export async function onRequest(context) {
   }
 
   try {
-    const kitsuUrl = `https://kitsu.io/api/edge/mappings?filter[externalSite]=anilist&filter[externalId]=${animeId}&include=item`;
+    const shardNumber = parseInt(animeId) % 100;
+    const shardFile = shardNumber.toString().padStart(2, '0');
 
-    const kitsuRes = await fetch(kitsuUrl, {
-        headers: {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
-        'User-Agent': 'AniForgeWebClient/1.0'
-        }
-    });
+    const githubUrl = `https://raw.githubusercontent.com/GetTheNya/aniforge-metadata/main/main-info-chunks/${shardFile}.json`;
 
-    if (!kitsuRes.ok) {
-        const errorText = await kitsuRes.text();
-  
-        console.log(`❌ AniList API Error! Status: ${kitsuRes.status}`);
-        console.log(`❌ Text: ${errorText}`);
-        return context.next();
+    const githubRes = await fetch(githubUrl);
+
+    if (!githubRes.ok) {
+      console.log(`❌ Shard ${shardFile}.json not found on GitHub.`);
+      return context.next();
     }
 
-    const json: any = await kitsuRes.json();
-    const animeData = json.included?.[0]?.attributes;
+    const chunk = await githubRes.json();
+    const animeData = chunk[animeId];
 
     if (!animeData) {
-        console.log(`❌ Kitsu cant find anime for AniList ID: ${animeId}`);
+        console.log(`❌ Anime with ID ${animeId} is missing from shard ${shardFile}.json`);
         return context.next();
     }
 
-    const title = animeData.canonicalTitle || animeData.titles.en || animeData.titles.en_jp;
-    const cover = animeData.posterImage?.large || animeData.posterImage?.original;
+    const title = animeData.title;
+    const cover = animeData.cover_large;
 
     const response = await context.next();  
 
