@@ -113,6 +113,18 @@ export function buildSqlFilterQuery(
     where.push('anime.has_uk_translation = 1');
   }
 
+  // Year filter
+  if (filter.year !== null) {
+    where.push('anime.season_year = ?');
+    params.push(filter.year);
+  }
+
+  // Season filter
+  if (filter.season !== null) {
+    where.push('anime.season = ?');
+    params.push(filter.season);
+  }
+
   // Genre inclusion (intersecting: must match ALL)
   for (const genre of filter.genres) {
     where.push('anime.anilist_id IN (SELECT anilist_id FROM anime_genres WHERE genre_slug = ?)');

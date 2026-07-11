@@ -1,5 +1,5 @@
 import { EMPTY_FILTER, type SearchFilterQuery, type SortOption, type EpisodeGroup } from '../types/filters';
-import type { AnimeFormat, AnimeStatus, MediaSource } from '../types/anime';
+import type { AnimeFormat, AnimeStatus, MediaSource, AnimeSeason } from '../types/anime';
 
 /**
  * Serializes a SearchFilterQuery object into URLSearchParams.
@@ -77,6 +77,12 @@ export function filterToSearchParams(filter: SearchFilterQuery): URLSearchParams
   if (filter.sortBy !== EMPTY_FILTER.sortBy) {
     params.set('sort', filter.sortBy);
   }
+  if (filter.year !== null && !isNaN(filter.year)) {
+    params.set('year', filter.year.toString());
+  }
+  if (filter.season !== null) {
+    params.set('season', filter.season);
+  }
 
   return params;
 }
@@ -113,6 +119,13 @@ export function searchParamsToFilter(params: URLSearchParams): SearchFilterQuery
     return null;
   };
 
+  const parseYear = (key: string): number | null => {
+    const val = params.get(key);
+    if (!val) return null;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? null : num;
+  };
+
   return {
     textQuery: params.get('q') || '',
     genres: parseStringArray('genres'),
@@ -137,5 +150,7 @@ export function searchParamsToFilter(params: URLSearchParams): SearchFilterQuery
     userStatuses: parseStringArray('uStatus'),
     excludedUserStatuses: parseStringArray('exUStatus'),
     sortBy: (params.get('sort') as SortOption) || EMPTY_FILTER.sortBy,
+    year: parseYear('year'),
+    season: (params.get('season') as AnimeSeason) || null,
   };
 }

@@ -1,7 +1,7 @@
 // Search filter query — direct port from Android SearchFilterQuery.kt
 // Supports include/exclude for genres, tags, studios, staff, formats, statuses, sources
 
-import type { AnimeFormat, AnimeStatus, MediaSource } from './anime';
+import type { AnimeFormat, AnimeStatus, MediaSource, AnimeSeason } from './anime';
 
 export type EpisodeGroup =
   | 'LESS_THAN_12'
@@ -49,6 +49,8 @@ export interface SearchFilterQuery {
   userStatuses: string[];
   excludedUserStatuses: string[];
   sortBy: SortOption;
+  year: number | null;
+  season: AnimeSeason | null;
 }
 
 export const EMPTY_FILTER: SearchFilterQuery = {
@@ -75,5 +77,7 @@ export const EMPTY_FILTER: SearchFilterQuery = {
   userStatuses: [],
   excludedUserStatuses: [],
   sortBy: 'SCORE',
+  year: null,
+  season: null,
 };
 

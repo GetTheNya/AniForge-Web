@@ -92,6 +92,8 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
     if (filter.excludedStaff.length) activeCount++;
     if (filter.userStatuses?.length) activeCount++;
     if (filter.excludedUserStatuses?.length) activeCount++;
+    if (filter.year !== null) activeCount++;
+    if (filter.season !== null) activeCount++;
     
     return filter.textQuery.trim() !== '' || activeCount > 0 || filter.sortBy !== 'LAST_MODIFIED';
   }, [filter]);

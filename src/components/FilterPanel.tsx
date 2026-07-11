@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SearchFilterQuery, SortOption, EpisodeGroup } from '../types/filters';
-import type { Genre, Tag, Studio } from '../types/anime';
+import type { Genre, Tag, Studio, AnimeSeason } from '../types/anime';
 import { ANIME_FORMATS, ANIME_STATUSES, MEDIA_SOURCES } from '../types/anime';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
@@ -242,6 +242,69 @@ export default function FilterPanel({
             </div>
           </FilterSection>
 
+          {/* Year & Season */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FilterSection title={t('filter.year')}>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1950"
+                  max={new Date().getFullYear() + 2}
+                  placeholder={t('filter.anyYear')}
+                  value={filter.year ?? ''}
+                  onChange={(e) =>
+                    update({ year: e.target.value ? parseInt(e.target.value, 10) : null })
+                  }
+                  className="glass-input py-1.5 px-3 w-50 text-xs text-center"
+                />
+                {filter.year !== null && (
+                  <button
+                    onClick={() => update({ year: null })}
+                    className="text-xs text-[var(--color-accent-rose)] hover:underline whitespace-nowrap"
+                  >
+                    {t('filter.clearYear')}
+                  </button>
+                )}
+              </div>
+            </FilterSection>
+
+            <FilterSection title={t('filter.season')}>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(['WINTER', 'SPRING', 'SUMMER', 'FALL'] as AnimeSeason[]).map((seas) => (
+                  <ToggleChip
+                    key={seas}
+                    label={t(`season.${seas.toLowerCase()}`, seas)}
+                    isActive={filter.season === seas}
+                    isExcluded={false}
+                    onToggle={() => {
+                      if (filter.season === seas) {
+                        update({ season: null });
+                      } else {
+                        update({ season: seas });
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </FilterSection>
+          </div>
+
+          {/* Current Season quick filter button */}
+          <div className="flex justify-start">
+            <button
+              onClick={() => {
+                const { year, season } = getCurrentSeason();
+                update({ year, season });
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {t('filter.currentSeason')}
+            </button>
+          </div>
+
           {/* User List status chips */}
           {user && !hideUserStatusFilters && (
             <FilterSection title={t('filter.userStatus')}>
@@ -451,6 +514,8 @@ export default function FilterPanel({
                   excludedStaff: [],
                   userStatuses: [],
                   excludedUserStatuses: [],
+                  year: null,
+                  season: null,
                 })
               }
               className="w-full py-2 text-xs font-medium text-[var(--color-accent-rose)] hover:text-white hover:bg-[var(--color-accent-rose)]/20 rounded-lg transition-colors border border-[var(--color-accent-rose)]/20"
@@ -534,5 +599,31 @@ function countActiveFilters(f: SearchFilterQuery, hideUserStatusFilters?: boolea
   if (f.excludedStaff.length) count++;
   if (!hideUserStatusFilters && f.userStatuses && f.userStatuses.length) count++;
   if (!hideUserStatusFilters && f.excludedUserStatuses && f.excludedUserStatuses.length) count++;
+  if (f.year !== null) count++;
+  if (f.season !== null) count++;
   return count;
+}
+
+function getCurrentSeason(): { year: number; season: AnimeSeason } {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0 = Jan, 11 = Dec
+  
+  let season: AnimeSeason;
+  let seasonYear = year;
+
+  if (month === 11 || month === 0 || month === 1) {
+    season = 'WINTER';
+    if (month === 11) {
+      seasonYear = year + 1;
+    }
+  } else if (month >= 2 && month <= 4) {
+    season = 'SPRING';
+  } else if (month >= 5 && month <= 7) {
+    season = 'SUMMER';
+  } else {
+    season = 'FALL';
+  }
+  
+  return { year: seasonYear, season };
 }

@@ -205,7 +205,12 @@ const resources = {
         language: "Language",
         hasUkTranslation: "Has Ukrainian translation",
         userStatus: "In My List",
-        clearAll: "Clear All Filters"
+        clearAll: "Clear All Filters",
+        year: "Year",
+        anyYear: "Any Year",
+        clearYear: "Clear",
+        season: "Season",
+        currentSeason: "Current Season"
       },
       sortOptions: {
         BY_MY_ORDER: "By My Order",
@@ -505,7 +510,12 @@ const resources = {
         language: "Мова",
         hasUkTranslation: "Має український переклад",
         userStatus: "У моєму списку",
-        clearAll: "Очистити всі фільтри"
+        clearAll: "Очистити всі фільтри",
+        year: "Рік",
+        anyYear: "Будь-який рік",
+        clearYear: "Очистити",
+        season: "Сезон",
+        currentSeason: "Поточний сезон"
       },
       sortOptions: {
         BY_MY_ORDER: "За моїм порядком",

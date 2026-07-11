@@ -134,6 +134,8 @@ export default function LibraryView() {
     if (filter.excludedMediaSources.length) activeCount++;
     if (filter.staff.length) activeCount++;
     if (filter.excludedStaff.length) activeCount++;
+    if (filter.year !== null) activeCount++;
+    if (filter.season !== null) activeCount++;
     
     const isCatalogSort = filter.sortBy !== 'LAST_MODIFIED';
     return filter.textQuery.trim() !== '' || activeCount > 0 || isCatalogSort;
