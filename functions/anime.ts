@@ -33,19 +33,25 @@ export async function onRequest(context) {
       body: JSON.stringify({ query, variables: { id: parseInt(animeId) } }),
     });
 
-    if (!aniListRes.ok) return context.next();
+    if (!aniListRes.ok) {
+        console.log(`not ok`)
+        return context.next();
+    }
 
     const { data } = await aniListRes.json();
     const media = data?.Media;
 
-    if (!media) return context.next();
+    if (!media) {
+        console.log(`not media`)
+        return context.next();
+    }
 
     const title = media.title.english || media.title.romaji || media.title.native;
     const cover = media.coverImage.large;
 
     const response = await context.next();  
 
-    return new HTMLRewriter()
+    const rewriter = new HTMLRewriter()
       .on('title', {
         element(el) {
           el.setInnerContent(`${title} — AniForge`);
@@ -64,7 +70,10 @@ export async function onRequest(context) {
       })
       .transform(response);
 
+      return rewriter;
+
   } catch (err) {
+    console.log(`err: ${err}`)
     return context.next();
   }
 }
