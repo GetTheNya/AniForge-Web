@@ -38,7 +38,7 @@ export async function onRequest(context) {
     const title = animeData.title;
     const cover = animeData.cover_large;
 
-    const description = `⭐ Rating: ${animeData.rating || 'N/A'} | 🎬 Format: ${animeData.type || 'N/A'} (${animeData.episodes || 'N/A'} ep.) \nView details and track progress in AniForge Web..`;
+    const description = `⭐ Rating: ${animeData.rating || 'N/A'} | 🎬 Format: ${animeData.type || 'N/A'} (${animeData.episodes || 'N/A'} ep.) \nView details and track progress in AniForge Web.`;
 
     const response = await context.next();  
 
