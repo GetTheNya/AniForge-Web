@@ -2,7 +2,6 @@ export async function onRequest(context) {
   const { request } = context;
   const url = new URL(request.url);
   const animeId = url.searchParams.get('id');
-
   const userAgent = request.headers.get('user-agent') || '';
   
   const isBot = /discordbot|telegrambot|twitterbot|slackbot|facebookexternalhit|whatsapp/i.test(userAgent);
@@ -36,28 +35,29 @@ export async function onRequest(context) {
     const cover = media.coverImage.large;
 
     const response = await context.next();
-    let html = await response.text();
 
-    html = html.replace(
-      '<title>AniForge — Anime Catalog</title>',
-      `<title>${title} — AniForge</title>`
-    );
-    html = html.replace(
-      '<meta property="og:title" content="AniForge — Anime Catalog" />',
-      `<meta property="og:title" content="${title} — Anime Details" />`
-    );
-    html = html.replace(
-      '<meta property="og:image" content="/AppIcon.png" />',
-      `<meta property="og:image" content="${cover}" />`
-    );
-    html = html.replace(
-      '</head>',
-      `<meta name="twitter:card" content="summary_large_image" /></head>`
-    );
+    return new HTMLRewriter()
+      .on('title', {
+        element(el) {
+          el.setInnerContent(`${title} — AniForge`);
+        },
+      })
+      .on('meta[property="og:title"]', {
+        element(el) {
+          el.setAttribute('content', `${title} — Anime Details`);
+        },
+      })
+      .on('meta[property="og:image"]', {
+        element(el) {
+          el.setAttribute('content', cover);
+        },
+      })
+      .on('head', {
+        element(el) {
+          el.append(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
+        },
+      })
 
-    return new Response(html, {
-      headers: response.headers,
-    });
   } catch (err) {
     return context.next();
   }
