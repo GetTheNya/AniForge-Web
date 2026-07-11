@@ -53,13 +53,20 @@ export async function onRequest(context) {
       })
       .on('head', {
         element(el) {
-          el.prepend(`<meta property="og:title" content="${title} — AniForge" />`, { html: true });
-          el.prepend(`<meta property="og:description" content="${description}" />`, { html: true });
-          el.prepend(`<meta property="og:image" content="${cover}" />`, { html: true });
-          el.prepend(`<meta property="og:type" content="${ogType}" />`, { html: true });
-          el.prepend(`<meta property="og:url" content="${request.url}" />`, { html: true });
+          const metaTags = `
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="${title} — AniForge" />
+            <meta name="twitter:description" content="${description}" />
+            ${cover ? `<meta name="twitter:image" content="${cover}" />` : ''}
+            
+            <meta property="og:title" content="${title} — AniForge" />
+            <meta property="og:description" content="${description}" />
+            ${cover ? `<meta property="og:image" content="${cover}" />` : ''}
+            <meta property="og:type" content="${ogType}" />
+            <meta property="og:url" content="${request.url}" />
+          `;
           
-          el.prepend(`<meta name="twitter:card" content="summary_large_image" />`, { html: true });
+          el.prepend(metaTags, { html: true });
         },
       })
       .transform(response);
