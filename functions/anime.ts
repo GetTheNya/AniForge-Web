@@ -3,6 +3,8 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const animeId = url.searchParams.get('id');
   const userAgent = request.headers.get('user-agent') || '';
+
+  console.log(userAgent);
   
   const isBot = /discordbot|telegrambot|twitterbot|slackbot|facebookexternalhit|whatsapp/i.test(userAgent);
 
