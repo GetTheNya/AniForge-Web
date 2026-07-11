@@ -603,6 +603,13 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
               >
                 ← Back to Collection
               </button>
+            ) : (session && !session.collectionId) ? (
+              <button
+                onClick={() => navigate('/library')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-border-glass)] bg-[var(--color-bg-overlay)] text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer shadow-lg"
+              >
+                ← Back to Library
+              </button>
             ) : (
               <button
                 onClick={() => navigate('/')}

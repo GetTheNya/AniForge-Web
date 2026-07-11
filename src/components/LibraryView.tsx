@@ -19,6 +19,7 @@ import { rowToAnime } from '../types/anime';
 import { EMPTY_FILTER, type SearchFilterQuery } from '../types/filters';
 import SearchBar from './SearchBar';
 import FilterPanel from './FilterPanel';
+import { useRandomSession } from '../context/RandomSessionContext';
 
 const LIBRARY_DEFAULT_FILTER: SearchFilterQuery = {
   ...EMPTY_FILTER,
@@ -30,6 +31,7 @@ export default function LibraryView() {
   const { navigate } = useNavigation();
   const { t } = useTranslation();
   const { saveCollection } = useUserTracking();
+  const { startRandomSession } = useRandomSession();
 
   // Tab state: 'lists' (My Lists) or 'collections' (Custom Collections)
   const [activeTab, setActiveTab] = useState<'lists' | 'collections'>('lists');
@@ -49,6 +51,18 @@ export default function LibraryView() {
   const [filter, setFilter] = useState<SearchFilterQuery>(LIBRARY_DEFAULT_FILTER);
   const [filteredTrackingList, setFilteredTrackingList] = useState<TrackingWithAnime[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
+
+  // Start randomizing session
+  const handleRandom = () => {
+    const validAnimeIds = filteredTrackingList
+      .map((item) => item.anime?.anilist_id)
+      .filter((id): id is number => typeof id === 'number');
+
+    if (validAnimeIds.length > 0) {
+      startRandomSession(null, validAnimeIds);
+    }
+  };
+
 
   // Reset page when tab, watch status, or filter changes
   useEffect(() => {
@@ -307,34 +321,44 @@ export default function LibraryView() {
       {/* Main View Area */}
       {activeTab === 'lists' ? (
         <div className="space-y-6">
-          {/* Lists Subtabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {[
-              { status: 'PLANNING', label: t('status.PLANNING'), color: STATUS_COLORS_BG.PLANNING },
-              { status: 'CURRENT', label: t('status.CURRENT'), color: STATUS_COLORS_BG.CURRENT },
-              { status: 'COMPLETED', label: t('status.COMPLETED'), color: STATUS_COLORS_BG.COMPLETED },
-              { status: 'PAUSED', label: t('status.PAUSED'), color: STATUS_COLORS_BG.PAUSED },
-              { status: 'DROPPED', label: t('status.DROPPED'), color: STATUS_COLORS_BG.DROPPED },
-            ].map((tab) => {
-              const count = trackingList.filter((item) => item.tracking.watch_status === tab.status).length;
-              return (
-                <button
-                  key={tab.status}
-                  onClick={() => setActiveStatus(tab.status)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all shrink-0 ${
-                    activeStatus === tab.status
-                      ? 'border-[var(--color-border-glass-hover)] bg-[var(--color-bg-card-hover)] text-white shadow-sm'
-                      : 'border-[var(--color-border-glass)] bg-transparent text-[var(--color-text-secondary)] hover:text-white'
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${tab.color}`} />
-                  <span>{tab.label}</span>
-                  <span className="text-[10px] bg-[var(--color-bg-input)] px-1.5 py-0.5 rounded-full text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)]">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Lists Subtabs */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none flex-1">
+              {[
+                { status: 'PLANNING', label: t('status.PLANNING'), color: STATUS_COLORS_BG.PLANNING },
+                { status: 'CURRENT', label: t('status.CURRENT'), color: STATUS_COLORS_BG.CURRENT },
+                { status: 'COMPLETED', label: t('status.COMPLETED'), color: STATUS_COLORS_BG.COMPLETED },
+                { status: 'PAUSED', label: t('status.PAUSED'), color: STATUS_COLORS_BG.PAUSED },
+                { status: 'DROPPED', label: t('status.DROPPED'), color: STATUS_COLORS_BG.DROPPED },
+              ].map((tab) => {
+                const count = trackingList.filter((item) => item.tracking.watch_status === tab.status).length;
+                return (
+                  <button
+                    key={tab.status}
+                    onClick={() => setActiveStatus(tab.status)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all shrink-0 ${
+                      activeStatus === tab.status
+                        ? 'border-[var(--color-border-glass-hover)] bg-[var(--color-bg-card-hover)] text-white shadow-sm'
+                        : 'border-[var(--color-border-glass)] bg-transparent text-[var(--color-text-secondary)] hover:text-white'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${tab.color}`} />
+                    <span>{tab.label}</span>
+                    <span className="text-[10px] bg-[var(--color-bg-input)] px-1.5 py-0.5 rounded-full text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)]">
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Random Button */}
+            <button
+              onClick={handleRandom}
+              disabled={filteredTrackingList.length === 0}
+              className="glass-button bg-[var(--color-accent-primary)]/10 hover:bg-[var(--color-accent-primary)]/20 border border-[var(--color-accent-primary)]/30 disabled:opacity-30 disabled:hover:bg-[var(--color-accent-primary)]/10 disabled:cursor-not-allowed cursor-pointer text-xs font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 transition-all self-end md:self-auto shrink-0 mb-2 md:mb-0"
+            >
+              🎲 Random
+            </button>
           </div>
 
           {/* Search and Filters */}
