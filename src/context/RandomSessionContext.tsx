@@ -27,7 +27,7 @@ export const useRandomSession = () => {
 };
 
 export const RandomSessionProvider = ({ children }: { children: ReactNode }) => {
-  const { navigate } = useNavigation();
+  const { navigate, pathname, search } = useNavigation();
   const { addToast } = useToast();
   const { t } = useTranslation();
 
@@ -42,6 +42,34 @@ export const RandomSessionProvider = ({ children }: { children: ReactNode }) => 
     }
     return null;
   });
+
+  // Track previous pathname to detect transitions away from /anime
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  useEffect(() => {
+    setPrevPathname(pathname);
+  }, [pathname]);
+
+  // Clear session if user navigates away from the active random anime page
+  useEffect(() => {
+    if (!session) return;
+
+    const params = new URLSearchParams(search);
+    const currentId = parseInt(params.get('id') || '', 10);
+    const activeId = session.seenIds[session.seenIds.length - 1];
+
+    if (pathname === '/anime') {
+      if (!isNaN(currentId) && currentId !== activeId) {
+        // Navigated to a different anime page manually (e.g. from catalog or recommendations)
+        setSession(null);
+      }
+    } else {
+      // If we transitioned away from /anime, or if we mounted on a non-anime page
+      if (prevPathname === '/anime' || pathname !== '/anime') {
+        setSession(null);
+      }
+    }
+  }, [pathname, search, session, prevPathname]);
 
   // Sync state to sessionStorage
   useEffect(() => {
