@@ -231,6 +231,17 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
         trackingUpdates.notes = updates.notes;
       }
 
+      // Automatically complete status when progress reaches maximum episodes,
+      // or revert status to CURRENT if progress is decreased from maximum.
+      if (updates.episode_progress !== undefined && updates.episode_progress !== null && anime && anime.episodes) {
+        const currentWatchStatus = tracking?.watch_status || 'PLANNING';
+        if (updates.episode_progress === anime.episodes) {
+          trackingUpdates.status = 'COMPLETED';
+        } else if (currentWatchStatus === 'COMPLETED' && updates.episode_progress < anime.episodes) {
+          trackingUpdates.status = 'CURRENT';
+        }
+      }
+
       if (updates.watch_status === 'COMPLETED' && anime && anime.episodes) {
         trackingUpdates.episode_progress = anime.episodes;
       }
@@ -242,7 +253,7 @@ export function useAnimeDetail(anilistId: number | null): UseAnimeDetailResult {
         throw e;
       }
     },
-    [user, anilistId, saveTracking, anime]
+    [user, anilistId, saveTracking, anime, tracking]
   );
 
   const deleteTracking = useCallback(async () => {

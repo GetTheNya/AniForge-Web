@@ -20,6 +20,34 @@ export default function CustomContextMenu() {
 
   const menuRef = useRef<HTMLDivElement>(null);
   const collectionsTriggerRef = useRef<HTMLDivElement>(null);
+  const collectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const cancelCollectionsTimeout = () => {
+    if (collectionsTimeoutRef.current) {
+      clearTimeout(collectionsTimeoutRef.current);
+      collectionsTimeoutRef.current = null;
+    }
+  };
+
+  const handleCollectionsMouseEnter = () => {
+    cancelCollectionsTimeout();
+    setIsCollectionsOpen(true);
+  };
+
+  const handleCollectionsMouseLeave = () => {
+    cancelCollectionsTimeout();
+    collectionsTimeoutRef.current = setTimeout(() => {
+      setIsCollectionsOpen(false);
+    }, 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (collectionsTimeoutRef.current) {
+        clearTimeout(collectionsTimeoutRef.current);
+      }
+    };
+  }, [isOpen]);
 
   // Observe tracking record reactively
   const tracking = useLiveQuery(
@@ -95,7 +123,11 @@ export default function CustomContextMenu() {
   const currentStatusConfig = STATUS_CONFIGS.find((c) => c.id === currentStatus);
 
   const handleStatusSelect = (statusId: string) => {
-    saveTracking(animeId!, { status: statusId });
+    const updates: Parameters<typeof saveTracking>[1] = { status: statusId };
+    if (statusId === 'COMPLETED' && animeData?.episodes) {
+      updates.episode_progress = animeData.episodes;
+    }
+    saveTracking(animeId!, updates);
     closeContextMenuWithDelay();
   };
 
@@ -104,7 +136,20 @@ export default function CustomContextMenu() {
     let val = newVal;
     if (val < 0) val = 0;
     if (maxEps && val > maxEps) val = maxEps;
-    saveTracking(animeId!, { episode_progress: val });
+
+    const updates: Parameters<typeof saveTracking>[1] = { episode_progress: val };
+
+    // Automatically complete status when progress reaches maximum episodes,
+    // or revert status to CURRENT if progress is decreased from maximum.
+    if (maxEps) {
+      if (val === maxEps) {
+        updates.status = 'COMPLETED';
+      } else if (currentStatus === 'COMPLETED' && val < maxEps) {
+        updates.status = 'CURRENT';
+      }
+    }
+
+    saveTracking(animeId!, updates);
   };
 
   const handleScoreSelect = (score: number) => {
@@ -155,6 +200,7 @@ export default function CustomContextMenu() {
         <button
           onClick={() => {
             setIsStatusOpen(!isStatusOpen);
+            cancelCollectionsTimeout();
             setIsCollectionsOpen(false);
           }}
           className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors text-left font-medium cursor-pointer"
@@ -288,8 +334,8 @@ export default function CustomContextMenu() {
       <div
         ref={collectionsTriggerRef}
         className="relative"
-        onMouseEnter={() => setIsCollectionsOpen(true)}
-        onMouseLeave={() => setIsCollectionsOpen(false)}
+        onMouseEnter={handleCollectionsMouseEnter}
+        onMouseLeave={handleCollectionsMouseLeave}
       >
         <button
           onClick={() => {
