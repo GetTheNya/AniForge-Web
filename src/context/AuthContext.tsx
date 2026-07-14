@@ -23,9 +23,29 @@ interface AuthContextValue {
   profile: UserProfile | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+// Helper to fetch user profile
+const fetchUserProfile = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, username, avatar_url')
+      .eq('id', userId)
+      .single();
+    if (error) {
+      console.error('[auth] Failed to fetch user profile:', error);
+      return null;
+    }
+    return data as UserProfile;
+  } catch (err) {
+    console.error('[auth] Error fetching user profile:', err);
+    return null;
+  }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -33,26 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  useEffect(() => {
-    // Helper to fetch user profile
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('id, username')
-          .eq('id', userId)
-          .single();
-        if (error) {
-          console.error('[auth] Failed to fetch user profile:', error);
-          return null;
-        }
-        return data as UserProfile;
-      } catch (err) {
-        console.error('[auth] Error fetching user profile:', err);
-        return null;
-      }
-    };
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      const prof = await fetchUserProfile(user.id);
+      setProfile(prof);
+    }
+  }, [user]);
 
+  useEffect(() => {
     // Process session and profile loading
     const handleSessionChange = async (s: Session | null) => {
       setSession(s);
@@ -60,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       
       if (currentUser) {
-        const prof = await fetchProfile(currentUser.id);
+        const prof = await fetchUserProfile(currentUser.id);
         setProfile(prof);
       } else {
         setProfile(null);
@@ -106,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, profile, signInWithGoogle, signOut }}
+      value={{ user, session, isLoading, profile, signInWithGoogle, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

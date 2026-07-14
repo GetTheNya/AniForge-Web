@@ -39,33 +39,21 @@ export default function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-50 border-b border-[var(--color-border-glass)] bg-[var(--color-bg-base)]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Nav */}
             <div className="flex items-center gap-4 lg:gap-6">
-              {/* Hamburger Button */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)] border border-transparent hover:border-[var(--color-border-glass)] transition-all cursor-pointer"
-                aria-label="Open menu"
+                className="lg:hidden p-2 -ml-2 rounded-lg text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-
               <div
                 className="flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate('/')}
               >
-                <img
-                  src="/favicon.svg"
-                  alt="AniForge Web Logo"
-                  className="w-8 h-8 rounded-lg object-contain shadow-lg"
-                />
-                <div>
-                  <h1 className="text-lg font-bold text-white">
-                    AniForge Web
-                  </h1>
-                </div>
+                <img src="/favicon.svg" alt="Logo" className="w-8 h-8 rounded-lg" />
+                <span className="hidden sm:block font-bold text-lg text-white">AniForge Web</span>
               </div>
 
               {/* Navigation links (Desktop) */}
@@ -89,6 +77,16 @@ export default function Layout({ children }: LayoutProps) {
                   }`}
                 >
                   {t('nav.library')}
+                </button>
+                <button
+                  onClick={() => navigate('/social')}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    pathname === '/social' || pathname === '/shared-profile' || pathname === '/shared-collection'
+                      ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                      : 'text-[var(--color-text-secondary)] hover:text-white'
+                  }`}
+                >
+                  <span>{t('socialScreen.name')}</span>
                 </button>
                 <button
                   onClick={() => navigate('/settings')}
@@ -115,8 +113,6 @@ export default function Layout({ children }: LayoutProps) {
               </nav>
             </div>
 
-
-            {/* Status + Auth */}
             <div className="flex items-center gap-4">
               {/* Database status pill */}
               <DatabaseStatusPill
@@ -132,6 +128,14 @@ export default function Layout({ children }: LayoutProps) {
                   <div className="w-8 h-8 rounded-full skeleton" />
                 ) : user ? (
                   <div className="flex items-center gap-3">
+                    {/* Profile Avatar */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-[var(--color-border-glass)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] font-bold text-xs select-none shrink-0 shadow-sm">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="PFP" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{(profile?.username || user.email?.split('@')[0] || 'U')[0].toUpperCase()}</span>
+                      )}
+                    </div>
                     <div className="text-right hidden sm:block">
                       <p className="text-xs font-medium text-[var(--color-text-primary)]">
                         {profile?.username || user.email?.split('@')[0] || 'User'}
@@ -270,6 +274,17 @@ export default function Layout({ children }: LayoutProps) {
               <span>{t('nav.settings')}</span>
             </button>
             <button
+              onClick={() => handleNav('/social')}
+              className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                pathname === '/social' || pathname === '/shared-profile' || pathname === '/shared-collection'
+                  ? 'text-white bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-white hover:bg-[var(--color-bg-input)]/30 border border-transparent'
+              }`}
+            >
+              <span>👥</span>
+              <span>{t('socialScreen.name')}</span>
+            </button>
+            <button
               onClick={() => handleNav('/android')}
               className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
                 pathname === '/android'
@@ -288,11 +303,21 @@ export default function Layout({ children }: LayoutProps) {
               <div className="w-full h-10 rounded-xl skeleton" />
             ) : user ? (
               <div className="flex flex-col gap-3 px-1">
-                <div className="flex flex-col">
-                  <span className="text-[var(--color-text-tertiary)] text-[10px] font-bold uppercase tracking-wider">{t('common.signedInAs')}</span>
-                  <span className="text-xs font-bold text-[var(--color-text-primary)] truncate mt-0.5">
-                    {profile?.username || user.email?.split('@')[0] || 'User'}
-                  </span>
+                <div className="flex items-center gap-3">
+                  {/* Profile Avatar */}
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-[var(--color-border-glass)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] font-bold text-sm select-none shrink-0 shadow-md">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="PFP" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{(profile?.username || user.email?.split('@')[0] || 'U')[0].toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[var(--color-text-tertiary)] text-[10px] font-bold uppercase tracking-wider">{t('common.signedInAs')}</span>
+                    <span className="text-xs font-bold text-[var(--color-text-primary)] truncate mt-0.5">
+                      {profile?.username || user.email?.split('@')[0] || 'User'}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => {

@@ -15,6 +15,10 @@ import CollectionDetailsView from './components/CollectionDetailsView';
 import SettingsView from './components/SettingsView';
 import Pagination from './components/Pagination';
 import AndroidDownloadView from './components/AndroidDownloadView';
+import SocialView from './components/SocialView';
+import SharedProfileView from './components/SharedProfileView';
+import SharedCollectionView from './components/SharedCollectionView';
+
 import { useDatabase } from './context/DatabaseContext';
 import { useAnimeSearch } from './hooks/useAnimeSearch';
 import { useCatalogMeta } from './hooks/useCatalogMeta';
@@ -107,6 +111,9 @@ function App() {
   const isCollectionPage = pathname === '/collection';
   const isSettingsPage = pathname === '/settings';
   const isDownloadPage = pathname === '/android';
+  const isSocialPage = pathname === '/social';
+  const isSharedProfilePage = pathname === '/shared-profile';
+  const isSharedCollectionPage = pathname === '/shared-collection';
   const queryParams = new URLSearchParams(search);
   const animeId = isDetailPage ? parseInt(queryParams.get('id') || '', 10) : null;
   const collectionId = isCollectionPage ? queryParams.get('id') : null;
@@ -128,7 +135,7 @@ function App() {
   }, [transitionKey]);
 
   // Loading / initial download state - bypass if viewing the download landing page so users get access instantly
-  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && !isDetailPage && !isLibraryPage && !isCollectionPage && !isSettingsPage && !isDownloadPage;
+  const isInitialLoading = (status === 'loading' || status === 'idle' || status === 'downloading' || status === 'checking' || status === 'processing') && !results.length && !isDetailPage && !isLibraryPage && !isCollectionPage && !isSettingsPage && !isDownloadPage && !isSocialPage && !isSharedProfilePage && !isSharedCollectionPage;
 
   if (isInitialLoading) {
     return (
@@ -207,6 +214,12 @@ function App() {
         <SettingsView />
       ) : isDownloadPage ? (
         <AndroidDownloadView />
+      ) : isSocialPage ? (
+        <SocialView />
+      ) : isSharedProfilePage ? (
+        <SharedProfileView />
+      ) : isSharedCollectionPage ? (
+        <SharedCollectionView />
       ) : (
         <div className="space-y-6">
 
