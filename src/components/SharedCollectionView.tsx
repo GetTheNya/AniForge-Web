@@ -9,6 +9,7 @@ import { supabase } from '../services/supabase';
 import { userDb } from '../services/userDb';
 import { rowToAnime, type Anime } from '../types/anime';
 import Pagination from './Pagination';
+import ToggleChip from './ToggleChip';
 
 interface RemoteCollection {
   collection_id: string;
@@ -49,10 +50,18 @@ export default function SharedCollectionView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCloning, setIsCloning] = useState(false);
 
+  // Database tracking of friend (target user)
+  const [friendTrackingMap, setFriendTrackingMap] = useState<Map<number, string>>(new Map());
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [coWatchFilter, setCoWatchFilter] = useState(false);
   const [moviesFilter, setMoviesFilter] = useState(false);
+  const [includedStatuses, setIncludedStatuses] = useState<string[]>([]);
+  const [excludedStatuses, setExcludedStatuses] = useState<string[]>([]);
+  const [friendIncludedStatuses, setFriendIncludedStatuses] = useState<string[]>([]);
+  const [friendExcludedStatuses, setFriendExcludedStatuses] = useState<string[]>([]);
+  const [isFilterPanelExpanded, setIsFilterPanelExpanded] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +70,15 @@ export default function SharedCollectionView() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, coWatchFilter, moviesFilter]);
+  }, [
+    searchQuery,
+    coWatchFilter,
+    moviesFilter,
+    includedStatuses,
+    excludedStatuses,
+    friendIncludedStatuses,
+    friendExcludedStatuses,
+  ]);
 
   // Fetch Collection and CrossRefs
   const loadCollectionData = useCallback(async () => {
@@ -137,7 +154,24 @@ export default function SharedCollectionView() {
         setCollectionItems([]);
       }
 
-      // 4. Fetch our local Completed tracking ids from Dexie
+      // 4. Fetch target user's watch list statuses from Supabase and build the friendTrackingMap
+      const { data: rawTracking, error: tError } = await supabase
+        .from('user_tracking')
+        .select('anilist_id, watch_status')
+        .eq('user_id', targetUserId)
+        .eq('is_deleted', false);
+
+      if (tError) throw tError;
+
+      const trackingMap = new Map<number, string>();
+      if (rawTracking) {
+        rawTracking.forEach((t) => {
+          trackingMap.set(t.anilist_id, t.watch_status);
+        });
+      }
+      setFriendTrackingMap(trackingMap);
+
+      // 5. Fetch our local Completed tracking ids from Dexie
       const localRecords = await userDb.user_tracking.toArray();
       const completedSet = new Set<number>();
       localRecords.forEach((r) => {
@@ -200,9 +234,34 @@ export default function SharedCollectionView() {
       // Movies only filter
       if (moviesFilter && item.anime?.format !== 'MOVIE') return false;
 
+      // Friend's List Status Filter
+      if (friendIncludedStatuses.length > 0 || friendExcludedStatuses.length > 0) {
+        const friendStatus = friendTrackingMap.get(item.anime_id) || 'NOT_IN_LIST';
+        if (friendIncludedStatuses.length > 0 && !friendIncludedStatuses.includes(friendStatus)) return false;
+        if (friendExcludedStatuses.length > 0 && friendExcludedStatuses.includes(friendStatus)) return false;
+      }
+
+      // My List Status Filter
+      if (includedStatuses.length > 0 || excludedStatuses.length > 0) {
+        const localStatus = mutualTrackingMap.get(item.anime_id) || 'NOT_IN_LIST';
+        if (includedStatuses.length > 0 && !includedStatuses.includes(localStatus)) return false;
+        if (excludedStatuses.length > 0 && excludedStatuses.includes(localStatus)) return false;
+      }
+
       return true;
     });
-  }, [collectionItems, searchQuery, coWatchFilter, moviesFilter, mutualTrackingMap]);
+  }, [
+    collectionItems,
+    searchQuery,
+    coWatchFilter,
+    moviesFilter,
+    friendIncludedStatuses,
+    friendExcludedStatuses,
+    includedStatuses,
+    excludedStatuses,
+    friendTrackingMap,
+    mutualTrackingMap,
+  ]);
 
   // Paginated collection list
   const paginatedList = useMemo(() => {
@@ -341,41 +400,130 @@ export default function SharedCollectionView() {
       </div>
 
       {/* Search & Filters */}
-      <div className="glass-card p-4 flex flex-col md:flex-row gap-3 items-center backdrop-blur-xl bg-[#0C0C0E]/60 border border-[var(--color-border-glass)]">
-        {/* Text Search */}
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t('catalog.searchPlaceholderAnime')}
-          className="w-full md:w-64 px-4 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-        />
+      <div className="glass-card p-4 flex flex-col gap-4 backdrop-blur-xl bg-[#0C0C0E]/60 border border-[var(--color-border-glass)]">
+        <div className="flex flex-col md:flex-row gap-3 items-center w-full">
+          {/* Text Search */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('catalog.searchPlaceholderAnime')}
+            className="w-full md:w-64 px-4 py-2 rounded-xl text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-glass)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+          />
 
-        <div className="flex gap-3 w-full md:w-auto">
-          {/* Co-Watch Toggle */}
-          <button
-            onClick={() => setCoWatchFilter(!coWatchFilter)}
-            className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              coWatchFilter
-                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
-                : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white'
-            }`}
-          >
-            👥 {t('socialScreen.coWatch')}
-          </button>
+          <div className="flex gap-3 w-full md:w-auto">
+            {/* Co-Watch Toggle */}
+            <button
+              onClick={() => setCoWatchFilter(!coWatchFilter)}
+              className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                coWatchFilter
+                  ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                  : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white'
+              }`}
+            >
+              👥 {t('socialScreen.coWatch')}
+            </button>
 
-          {/* Movies Toggle */}
-          <button
-            onClick={() => setMoviesFilter(!moviesFilter)}
-            className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              moviesFilter
-                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
-                : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white'
-            }`}
-          >
-            🎬 {t('socialScreen.moviesOnly')}
-          </button>
+            {/* Movies Toggle */}
+            <button
+              onClick={() => setMoviesFilter(!moviesFilter)}
+              className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                moviesFilter
+                  ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                  : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white'
+              }`}
+            >
+              🎬 {t('socialScreen.moviesOnly')}
+            </button>
+
+            {/* Filter Panel Toggle Button */}
+            <button
+              onClick={() => setIsFilterPanelExpanded(!isFilterPanelExpanded)}
+              className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                isFilterPanelExpanded
+                  ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] shadow-[0_0_12px_rgba(139,92,246,0.15)]'
+                  : 'border-[var(--color-border-glass)] bg-[var(--color-bg-input)] text-[var(--color-text-secondary)] hover:text-white'
+              }`}
+            >
+              ⚙️ {t('filter.title')}
+            </button>
+          </div>
         </div>
+
+        {/* Collapsible Filter Panel */}
+        {isFilterPanelExpanded && (
+          <div className="flex flex-col gap-4 border-t border-[var(--color-border-glass)] pt-3 transition-all duration-300 animate-fade-in">
+            {/* Friend's List Status Filters */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                {t('socialScreen.friendFiltersLabel')}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {['NOT_IN_LIST', 'CURRENT', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].map((key) => {
+                  const isActive = friendIncludedStatuses.includes(key);
+                  const isExcluded = friendExcludedStatuses.includes(key);
+                  const label = key === 'NOT_IN_LIST' 
+                    ? t('contextMenu.notTracking') 
+                    : t(`status.${key}`);
+
+                  return (
+                    <ToggleChip
+                      key={key}
+                      label={label}
+                      isActive={isActive}
+                      isExcluded={isExcluded}
+                      onToggle={() => {
+                        if (isExcluded) {
+                          setFriendExcludedStatuses(prev => prev.filter(k => k !== key));
+                        } else if (isActive) {
+                          setFriendIncludedStatuses(prev => prev.filter(k => k !== key));
+                          setFriendExcludedStatuses(prev => [...prev, key]);
+                        } else {
+                          setFriendIncludedStatuses(prev => [...prev, key]);
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* My List Status Filters */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                {t('socialScreen.localUserFiltersLabel')}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {['NOT_IN_LIST', 'CURRENT', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].map((key) => {
+                  const isActive = includedStatuses.includes(key);
+                  const isExcluded = excludedStatuses.includes(key);
+                  const label = key === 'NOT_IN_LIST' 
+                    ? t('contextMenu.notTracking') 
+                    : t(`status.${key}`);
+
+                  return (
+                    <ToggleChip
+                      key={key}
+                      label={label}
+                      isActive={isActive}
+                      isExcluded={isExcluded}
+                      onToggle={() => {
+                        if (isExcluded) {
+                          setExcludedStatuses(prev => prev.filter(k => k !== key));
+                        } else if (isActive) {
+                          setIncludedStatuses(prev => prev.filter(k => k !== key));
+                          setExcludedStatuses(prev => [...prev, key]);
+                        } else {
+                          setIncludedStatuses(prev => [...prev, key]);
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grid of anime */}
