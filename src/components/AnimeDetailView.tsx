@@ -50,6 +50,26 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
     deleteTracking,
   } = useAnimeDetail(anilistId);
 
+  // Derive localized title at the top level
+  const derivedTitle = useMemo(() => {
+    if (!anime) return '';
+    if (preferUkTitles) {
+      if (anime.title_uk) return anime.title_uk;
+      if (anime.title_en) return anime.title_en;
+      return anime.title_romaji;
+    } else {
+      if (anime.title_en) return anime.title_en;
+      return anime.title_romaji;
+    }
+  }, [anime, preferUkTitles]);
+
+  // Sync page title to document.title
+  useEffect(() => {
+    if (derivedTitle) {
+      document.title = `${derivedTitle} - AniForge Web`;
+    }
+  }, [derivedTitle]);
+
   // Local state for UI
   const [activeTab, setActiveTab] = useState<'info' | 'relations' | 'staff' | 'franchise'>('info');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -323,27 +343,16 @@ export default function AnimeDetailView({ anilistId }: AnimeDetailViewProps) {
   const coverUrl = anime.cover_extra_large || anime.cover_large;
   const bannerUrl = anime.banner_image || coverUrl;
 
-  let title = '';
+  const title = derivedTitle;
   let subtitle: string | null = null;
 
   if (preferUkTitles) {
-    if (anime.title_uk) {
-      title = anime.title_uk;
+    if (anime.title_uk || anime.title_en) {
       subtitle = anime.title_romaji || null;
-    } else if (anime.title_en) {
-      title = anime.title_en;
-      subtitle = anime.title_romaji || null;
-    } else {
-      title = anime.title_romaji;
-      subtitle = null;
     }
   } else {
     if (anime.title_en) {
-      title = anime.title_en;
       subtitle = anime.title_romaji || null;
-    } else {
-      title = anime.title_romaji;
-      subtitle = null;
     }
   }
 

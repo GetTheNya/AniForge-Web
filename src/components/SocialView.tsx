@@ -19,6 +19,11 @@ export default function SocialView() {
   const { navigate } = useNavigation();
   const { addToast: showToast } = useToast();
 
+  // Sync page title to document.title
+  useEffect(() => {
+    document.title = `${t('socialScreen.name', 'Social')} - AniForge Web`;
+  }, [t]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);

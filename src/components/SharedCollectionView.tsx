@@ -45,6 +45,16 @@ export default function SharedCollectionView() {
   }, [search]);
 
   const [collection, setCollection] = useState<RemoteCollection | null>(null);
+
+  // Sync page title to document.title
+  useEffect(() => {
+    if (collection) {
+      document.title = `${t('socialScreen.sharedCollectionTitle', { title: collection.title })} - AniForge Web`;
+    } else {
+      document.title = `${t('socialScreen.sharedCollectionDefault', 'Shared Collection')} - AniForge Web`;
+    }
+  }, [collection, t]);
+
   const [collectionItems, setCollectionItems] = useState<AnimeCollectionItem[]>([]);
   const [localCompletedAnimeIds, setLocalCompletedAnimeIds] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);

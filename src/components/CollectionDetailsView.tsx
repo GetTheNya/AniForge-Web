@@ -36,6 +36,22 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
   const catalogMeta = useCatalogMeta();
   const { startRandomSession } = useRandomSession();
 
+  const collection = useLiveQuery(
+    async () => {
+      if (!collectionId) return null;
+      const col = await userDb.collections.get(collectionId);
+      if (!col || col.is_deleted === 1) return null;
+      return col;
+    },
+    [collectionId]
+  );
+
+  useEffect(() => {
+    if (collection) {
+      document.title = `${collection.title} - AniForge Web`;
+    }
+  }, [collection]);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 24;
@@ -262,15 +278,6 @@ export default function CollectionDetailsView({ collectionId }: CollectionDetail
       </div>
     );
   }
-
-  const collection = useLiveQuery(
-    async () => {
-      const col = await userDb.collections.get(collectionId);
-      if (!col || col.is_deleted === 1) return null;
-      return col;
-    },
-    [collectionId]
-  );
 
   if (collection === undefined) {
     return (

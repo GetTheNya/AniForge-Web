@@ -31,6 +31,14 @@ function App() {
   const { pathname, search, navigate } = useNavigation();
   const { t } = useTranslation();
 
+  // Sync page title for the main search/catalog page
+  useEffect(() => {
+    const isSearchPage = pathname === '/' || pathname === '';
+    if (isSearchPage) {
+      document.title = 'AniForge Web';
+    }
+  }, [pathname]);
+
   // Check if visiting from a mobile device
   const isMobile = useMemo(() => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(

@@ -59,6 +59,16 @@ export default function SharedProfileView() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  // Sync page title to document.title
+  useEffect(() => {
+    if (profile?.username) {
+      document.title = `${t('socialScreen.sharedProfileTitle', { username: profile.username })} - AniForge Web`;
+    } else {
+      document.title = `${t('socialScreen.sharedProfileDefault', 'Shared Profile')} - AniForge Web`;
+    }
+  }, [profile, t]);
+
   const [activeTab, setActiveTab] = useState<'lists' | 'collections'>('lists');
   const [friendIncludedStatuses, setFriendIncludedStatuses] = useState<string[]>(['CURRENT']);
   const [friendExcludedStatuses, setFriendExcludedStatuses] = useState<string[]>([]);

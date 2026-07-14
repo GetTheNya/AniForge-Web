@@ -33,6 +33,11 @@ export default function LibraryView() {
   const { saveCollection } = useUserTracking();
   const { startRandomSession } = useRandomSession();
 
+  // Sync page title to document.title
+  useEffect(() => {
+    document.title = `${t('library.title', 'My Library')} - AniForge Web`;
+  }, [t]);
+
   // Tab state: 'lists' (My Lists) or 'collections' (Custom Collections)
   const [activeTab, setActiveTab] = useState<'lists' | 'collections'>('lists');
   

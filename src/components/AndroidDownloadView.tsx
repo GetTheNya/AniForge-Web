@@ -8,6 +8,11 @@ export default function AndroidDownloadView() {
   const { search, navigate } = useNavigation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Sync page title to document.title
+  useEffect(() => {
+    document.title = `${t('download.title', 'Get AniForge App')} - AniForge Web`;
+  }, [t]);
+
   const downloadUrl = 'https://github.com/GetTheNya/AniForge/releases/latest';
   const repoUrl = 'https://github.com/GetTheNya/AniForge';
 

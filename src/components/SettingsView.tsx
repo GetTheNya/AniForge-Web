@@ -17,6 +17,11 @@ export default function SettingsView() {
   const { user, profile, isLoading: authLoading, signInWithGoogle, signOut, refreshProfile } = useAuth();
   const { addToast: showToast } = useToast();
 
+  // Sync page title to document.title
+  useEffect(() => {
+    document.title = `${t('settings.title', 'Settings')} - AniForge Web`;
+  }, [t]);
+
   // Username edit states
   const [usernameInput, setUsernameInput] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
